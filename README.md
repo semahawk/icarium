@@ -4,6 +4,10 @@ Icarium is meant to be a very simple, 64-bit RISC SoC, focusing on good debug-ab
 
 This project is in it's very very early stages, but I'm trying to document everything on the go [here](docs/spec.md) (a PDF version should also be available [here](docs/spec.pdf)).
 
+## Implementation
+
+I'm implementing Icarium in [Verilog](https://en.wikipedia.org/wiki/Verilog), using [Xilinx ISE WebPack 14.7](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/design-tools.html) as the SDK, XST as the sythesis tool, ISim as the simulation tool, [Visual Studio Code](https://code.visualstudio.com/) as the main editor, [Mimas V2 from Numato Labs](https://numato.com/product/mimas-v2-spartan-6-fpga-development-board-with-ddr-sdram) featuring a Spartan 6 as the main real-life target board, and [MimasV2Config.py](https://github.com/numato/samplecode/blob/master/FPGA/MimasV2/tools/configuration/python/MimasV2Config.py) as the tool to actually flash the board with.
+
 ## Goal plan
 
 Here's what I would love to have implemented at some point (in a somewhat ascending priority / hypeness):
