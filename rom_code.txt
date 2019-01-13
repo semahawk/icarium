@@ -1,0 +1,11 @@
+// the Boot ROM code
+// this is what the CPU starts executing at start-up
+
+0204000000200420 // set r1, 0x00008010 shl 32
+0208000000001cc0 // set r2, 0x73 shl 0
+040c200000000000 // load r3, r1 off 0
+0604400000000010 // store r2, r1 off 0x10
+0000000000000000 // nop
+0000000000000000 // nop
+0000000000000000 // nop
+fe00000000000000 // halt
