@@ -38,19 +38,27 @@ module rom (
     parameter INSTRUCTIONS = 128;
     parameter GRANULE = 8;
 
-    reg [`DAT_WIDTH-1:0] rom_code [0:INSTRUCTIONS-1];
+    reg state = `STATE_IDLE;
     reg [`DAT_WIDTH-1:0] r_dat_o;
     reg r_ack = 1'h0;
     reg r_err = 1'h0;
-    reg state = `STATE_IDLE;
-    reg [31:0] i;
 
     assign rom_ack_o = rom_stb_i ? r_ack : 1'b0;
     assign rom_err_o = rom_stb_i ? r_err : 1'b0;
     assign rom_dat_o = r_dat_o;
 
-    initial begin
-        $readmemh("rom_code.txt", rom_code);
+    always @(*) begin
+        casex (rom_adr_i)
+            16'h0000: r_dat_o = 64'h0204000000200420; // set r1, 0x00008010 shl 32
+            16'h0008: r_dat_o = 64'h0208000000001cc0; // set r2, 0x73 shl 0
+            16'h0010: r_dat_o = 64'h040c200000000000; // load r3, r1 off 0
+            16'h0018: r_dat_o = 64'h0604400000000010; // store r2, r1 off 0x10
+            16'h0020: r_dat_o = 64'h0000000000000000; // nop
+            16'h0028: r_dat_o = 64'h0000000000000000; // nop
+            16'h0030: r_dat_o = 64'h0000000000000000; // nop
+            16'h0038: r_dat_o = 64'hfe00000000000000; // halt
+            default:  r_dat_o = 64'hfe00000000000000; // halt by default
+        endcase
     end
 
     always @(posedge clk_i) begin
@@ -58,8 +66,6 @@ module rom (
             state <= `STATE_IDLE;
             r_ack <= 1'h0;
             r_err <= 1'h0;
-
-            $readmemh("rom_code.txt", rom_code);
         end else begin
             case (state)
                 `STATE_IDLE: begin
@@ -72,17 +78,8 @@ module rom (
                             r_ack <= 1'h0;
                             r_err <= 1'h1;
                         end else begin
-                            if (rom_code[rom_adr_i / (`DAT_WIDTH / 8)] === {`DAT_WIDTH{1'hx}}) begin
-                                // accessing code which is not there
-                                r_dat_o <= rom_code[rom_adr_i / (`DAT_WIDTH / 8)];
-                                r_ack <= 1'h0;
-                                r_err <= 1'h1;
-                            end else begin
-                                // valid address containing actual data requested
-                                r_dat_o <= rom_code[rom_adr_i / (`DAT_WIDTH / 8)];
-                                r_ack <= 1'h1;
-                                r_err <= 1'h0;
-                            end
+                            r_ack <= 1'h1;
+                            r_err <= 1'h0;
                         end
                     end
                 end

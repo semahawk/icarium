@@ -53,7 +53,7 @@ module syscon (
             if (global_reset_counter == GLOBAL_RESET_CLOCKS) begin
                 global_reset_done <= 1'd1;
             end else begin
-                global_reset_counter = global_reset_counter + 1;
+                global_reset_counter <= global_reset_counter + 1;
             end
         end
     end
