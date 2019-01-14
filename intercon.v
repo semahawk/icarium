@@ -96,10 +96,17 @@ module intercon (
         end else begin
             if (granted_masters_adr_i >= 64'h0000800000000000 &&
                 granted_masters_adr_i <  64'h0000800000000400)
+                // ROM
                 selected_slave <= 1;
+            else
+            if (granted_masters_adr_i >= 64'h0000800100000000 &&
+                granted_masters_adr_i <  64'h0000800100400000)
+                // SYSCON
+                selected_slave <= 2;
             else
             if (granted_masters_adr_i >= 64'h0000801000000000 &&
                 granted_masters_adr_i <  64'h0000801000000400)
+                // UART
                 selected_slave <= 0;
             else
                 selected_slave <= 0;

@@ -32,6 +32,11 @@ module soc (
     `WB_MASTER_WIRE_SIGNALS(cpu_);
     `WB_SLAVE_WIRE_SIGNALS(rom_);
     `WB_SLAVE_WIRE_SIGNALS(uart_);
+    `WB_SLAVE_WIRE_SIGNALS(syscon_);
+
+    // those two wires are actually supposed to clock/reset all the IP cores
+    // NOT soc_rst_i and soc_clk_i
+    wire syscon_clk_i, syscon_rst_i;
 
     // shared data input wires for all the masters
     wire [`DAT_WIDTH-1:0] masters_dat_i;
@@ -44,8 +49,8 @@ module soc (
     wire slave_we_i;
 
     cpu cpu (
-        .rst_i(soc_rst_i),
-        .clk_i(soc_clk_i),
+        .rst_i(syscon_rst_i),
+        .clk_i(syscon_clk_i),
         .cpu_stb_o(cpu_stb_o),
         .cpu_cyc_o(cpu_cyc_o),
         .cpu_we_o(cpu_we_o),
@@ -59,10 +64,10 @@ module soc (
 
     intercon #(
         .MASTERS_NUM(1),
-        .SLAVES_NUM(2)
+        .SLAVES_NUM(3)
     ) intercon (
-        .rst_i(soc_rst_i),
-        .clk_i(soc_clk_i),
+        .rst_i(syscon_rst_i),
+        .clk_i(syscon_clk_i),
         .m2i_cyc_i({ cpu_cyc_o }),
         .m2i_stb_i({ cpu_stb_o }),
         .m2i_we_i({ cpu_we_o }),
@@ -72,10 +77,10 @@ module soc (
         .i2m_ack_o({ cpu_ack_i }),
         .i2m_err_o({ cpu_err_i }),
         .i2m_dat_o({ masters_dat_i }),
-        .s2i_ack_i({ rom_ack_o, uart_ack_o }),
-        .s2i_err_i({ rom_err_o, uart_err_o }),
-        .s2i_dat_i({ rom_dat_o, uart_dat_o }),
-        .i2s_stb_o({ rom_stb_i, uart_stb_i }),
+        .s2i_ack_i({ syscon_ack_o, rom_ack_o, uart_ack_o }),
+        .s2i_err_i({ syscon_err_o, rom_err_o, uart_err_o }),
+        .s2i_dat_i({ syscon_dat_o, rom_dat_o, uart_dat_o }),
+        .i2s_stb_o({ syscon_stb_i, rom_stb_i, uart_stb_i }),
         .i2s_cyc_o({ slave_cyc_i }),
         .i2s_adr_o({ slave_adr_i }),
         .i2s_dat_o({ slave_dat_i }),
@@ -86,8 +91,8 @@ module soc (
     rom #(
         .INSTRUCTIONS(8)
     ) rom (
-        .rst_i(soc_rst_i),
-        .clk_i(soc_clk_i),
+        .rst_i(syscon_rst_i),
+        .clk_i(syscon_clk_i),
         .rom_stb_i(rom_stb_i),
         .rom_cyc_i(slave_cyc_i),
         .rom_we_i(slave_we_i),
@@ -100,8 +105,8 @@ module soc (
     );
 
     uart uart (
-        .rst_i(soc_rst_i),
-        .clk_i(soc_clk_i),
+        .rst_i(syscon_rst_i),
+        .clk_i(syscon_clk_i),
         .uart_stb_i(uart_stb_i),
         .uart_cyc_i(slave_cyc_i),
         .uart_we_i(slave_we_i),
@@ -114,6 +119,25 @@ module soc (
         // XXX: this is just temporary
         // XXX: just to have the UART controller be able to output stuff
         .uart_out(soc_leds_o)
+    );
+
+    syscon syscon (
+        // those are the reference input clocks/reset signals
+        .ref_rst_i(soc_rst_i),
+        .ref_clk_i(soc_clk_i),
+        // these two wires are actually controlling all the IP cores inside
+        .syscon_rst_o(syscon_rst_i),
+        .syscon_clk_o(syscon_clk_i),
+        // rest is the Wishbone slave interface
+        .syscon_stb_i(syscon_stb_i),
+        .syscon_cyc_i(slave_cyc_i),
+        .syscon_we_i(slave_we_i),
+        .syscon_sel_i(slave_sel_i),
+        .syscon_adr_i(slave_adr_i),
+        .syscon_dat_i(slave_dat_i),
+        .syscon_dat_o(syscon_dat_o),
+        .syscon_ack_o(syscon_ack_o),
+        .syscon_err_o(syscon_err_o)
     );
 
 endmodule

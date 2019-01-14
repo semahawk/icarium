@@ -46,12 +46,6 @@ module soc_tb;
 		// Wait 100 ns for global reset to finish
 		#100;
 
-		// reset the slave
-		soc_rst_i = 1;
-		#100;
-		soc_rst_i = 0;
-		#100;
-
 		// Add stimulus here
 		#1000;
 	end

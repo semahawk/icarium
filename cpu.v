@@ -64,6 +64,10 @@ module cpu (
             cpu_halted <= 1'b0;
             cpu_stb_o <= 1'b0;
             cpu_cyc_o <= 1'b0;
+            cpu_we_o  <= 1'b0;
+            cpu_sel_o <= {`SEL_WIDTH{1'h0}};
+            cpu_adr_o <= {`ADR_WIDTH{1'h0}};
+            cpu_dat_o <= {`DAT_WIDTH{1'h0}};
 
             for (i = `REG_ZERO; i < `REG_PC; i = i + 1)
                 cpu_regs[i] <= {`DAT_WIDTH{1'h0}};
