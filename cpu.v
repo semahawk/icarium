@@ -68,7 +68,6 @@ module cpu (
             for (i = `REG_ZERO; i < `REG_PC; i = i + 1)
                 cpu_regs[i] <= {`DAT_WIDTH{1'h0}};
 
-            // ! TODO: change to ROM's actual address
             cpu_regs[`REG_PC] <= 64'h0000800000000000;
         end else if (cpu_halted) begin
             // nop

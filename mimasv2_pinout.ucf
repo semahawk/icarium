@@ -12,8 +12,7 @@
 
 CONFIG VCCAUX = "3.3" ;
 
-   #NET "CLK_100MHz"                  LOC = V10     | IOSTANDARD = LVCMOS33 | PERIOD = 100MHz ;
-    NET "soc_clk_i"                   LOC = V10     | IOSTANDARD = LVCMOS33 | PERIOD = 100MHz ;
+   NET "Mv2_CLK"                     LOC = V10     | IOSTANDARD = LVCMOS33 | PERIOD = 100MHz ;
    #NET "CLK_12MHz"                   LOC = D9      | IOSTANDARD = LVCMOS33 | PERIOD = 12MHz ;
 
 ###################################################################################################################################################
@@ -105,14 +104,14 @@ CONFIG VCCAUX = "3.3" ;
 ###################################################################################################################################################
 #                                                    LEDs                                                                                         #
 ###################################################################################################################################################
-    #NET "LED[7]"                     LOC = P15     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D1
-    #NET "LED[6]"                     LOC = P16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D2
-    #NET "LED[5]"                     LOC = N15     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D3
-    #NET "LED[4]"                     LOC = N16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D4
-    #NET "LED[3]"                     LOC = U17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D5
-    #NET "LED[2]"                     LOC = U18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D6
-    #NET "LED[1]"                     LOC = T17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D7
-    #NET "LED[0]"                     LOC = T18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D8
+    NET "Mv2_LED[7]"                     LOC = P15     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D1
+    NET "Mv2_LED[6]"                     LOC = P16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D2
+    NET "Mv2_LED[5]"                     LOC = N15     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D3
+    NET "Mv2_LED[4]"                     LOC = N16     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D4
+    NET "Mv2_LED[3]"                     LOC = U17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D5
+    NET "Mv2_LED[2]"                     LOC = U18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D6
+    NET "Mv2_LED[1]"                     LOC = T17     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D7
+    NET "Mv2_LED[0]"                     LOC = T18     | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ;  #D8
 
 ###################################################################################################################################################
 #                                                   Micro SD Card                                                                                 #
