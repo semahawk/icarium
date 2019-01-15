@@ -209,4 +209,4 @@ CONFIG VCCAUX = "3.3" ;
     #NET "IO_P9[3]"                 LOC = K15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 5
     #NET "IO_P9[2]"                 LOC = K16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 6
     #NET "IO_P9[1]"                 LOC = L15      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 7
-    #NET "IO_P9[0]"                 LOC = L16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8
+     NET "Mv2_UART0_TX"             LOC = L16      | IOSTANDARD = LVCMOS33 | DRIVE = 8 | SLEW = FAST ; #Pin 8

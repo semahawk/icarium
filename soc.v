@@ -26,6 +26,9 @@ module soc (
     input soc_rst_i,
     input soc_clk_i,
 
+    input soc_uart0_rx,
+    output soc_uart0_tx,
+
     output [7:0] soc_leds_o
 );
 
@@ -118,7 +121,9 @@ module soc (
         .uart_err_o(uart_err_o),
         // XXX: this is just temporary
         // XXX: just to have the UART controller be able to output stuff
-        .uart_out(soc_leds_o)
+        .uart_out(soc_leds_o),
+        // the UART's actual TX line
+        .uart_tx(soc_uart0_tx)
     );
 
     syscon syscon (
