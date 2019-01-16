@@ -193,16 +193,25 @@ There are no FIFOs, no DMA, nothing fancy.
 
 | Bit(s) | Name            | Reset value | Attribute | Description                                                  |
 | ------ | --------------- | ----------- | --------- | ------------------------------------------------------------ |
-| `2`    | `STAT_RXD_BUSY` |             |           |                                                              |
-| `1`    | `STAT_TXD_BUSY` | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting a character, and a next character cannot be sent. |
-| `0`    | `STAT_ENA`      | `1'b1`      | RO        | Enabled - shows the current state of the controller. If this bit is `1` then the controller is operating, and can send and receive data. |
+| `63:1` | -               | `63'h0`     | RsvZ      | Reserved                                                     |
+| `0`    | `STAT_TXD_BUSY` | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting.<br />Note: if this bit is set, then any write to UART_DATA is ignored. |
+
+### UART_CTRL
+
+| Bit(s) | Name        | Reset value | Attribute | Description                                                  |
+| ------ | ----------- | ----------- | --------- | ------------------------------------------------------------ |
+| `63:3` | -           | `60'h0`     | RsvZ      | Reserved                                                     |
+| `3:1`  | `CTRL_BAUD` | `3'b000`    | RW        | Baud rate - selects what baud rate to operate the UART on.<br /><br />`3'b000` - 1200<br />`3'b001` - 2400<br />`3'b010` - 4800<br />`3'b011` - 9600<br />`3'b100` - 19200<br />`3'b101` - 38400<br />`3'b110` - 57600<br />`3'b111` - 115200<br /><br />NOT IMPLEMENTED |
+| `0`    | `CTRL_ENA`  | `1'b1`      | RW        | Enabled - shows the current state of the controller. If this bit is `1` then the controller is operating, and can send and receive data.<br /><br />NOT IMPLEMENTED |
+
+
 
 ### UART_DATA
 
 | Bit(s) | Name   | Reset value | Attribute | Description                                                  |
 | ------ | ------ | ----------- | --------- | ------------------------------------------------------------ |
-| `63:8` |        | `56'h0`     | RsvZ      |                                                              |
-| `7:0`  | `DATA` | `8'h0`      | RW        | Writing to this register will trigger a transmit of the character, and reading from it will return any previously read character. |
+| `63:8` | -      | `56'h0`     | RsvZ      | Reserved                                                     |
+| `7:0`  | `DATA` | `8'h0`      | RW        | Writing to this register will trigger a transmit of the character, and reading from it will return any previously read character.<br />Note: if `STAT_TXD_BUSY` is `1` then any writes to this register are ignored. |
 
 # SPI
 

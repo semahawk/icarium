@@ -22,6 +22,15 @@
 `include "config.v"
 `include "wishbone.v"
 
+`define UART_STAT 8'h00
+`define UART_CTRL 8'h08
+`define UART_DATA 8'h10
+
+// states of the Wishbone slave
+`define STATE_IDLE 0
+`define STATE_WAIT_FOR_PHASE_END 1
+
+// states of the transmitter device
 `define STATE_TX_IDLE       0
 `define STATE_TX_SEND_DATA  1
 `define STATE_TX_SEND_STOP  2
@@ -44,6 +53,10 @@ module uart (
     reg r_ack = 1'h0;
     reg r_err = 1'h0;
 
+    reg [`DAT_WIDTH-1:0] uart_ctrl;
+
+    // internal state of the Wishbone slave
+    reg [1:0] uart_state = `STATE_IDLE;
     // internal state of the transmitter
     reg [4:0] uart_tx_state = `STATE_TX_IDLE;
     // the data-to-be-sent will be latched into this shift-register
@@ -54,11 +67,14 @@ module uart (
     reg uart_tx_baud_clk = 1'd0;
     // increments on every clk_i, resets down to zero after every 9600 clocks
     reg [31:0] uart_tx_baud_counter = 32'd0;
-    // used for synchronization between the control and the transmit parts
-    reg uart_tx_transmitting_data = 1'd0;
     reg uart_tx_start = 1'd0;
     // signals going in/out of the peripheral
     reg r_uart_tx = 1'd1;
+    // used for synchronization between the control and the transmit parts
+    wire uart_tx_transmitting_data;
+
+    assign uart_tx_transmitting_data =
+        (uart_tx_state != `STATE_TX_IDLE) || uart_tx_start ? 1'b1 : 1'b0;
 
     reg [4:0] tx_wait_clocks = 4'd10;
 
@@ -90,30 +106,78 @@ module uart (
         end
     end
 
-    // the control block
+    // the control block (the Wishbone slave interface)
     always @(posedge clk_i) begin
         if (rst_i) begin
             r_ack <= 1'b0;
             r_err <= 1'b0;
-            r_dat_o <= 64'hdeadbabe;
+            r_dat_o <= {`DAT_WIDTH{1'h0}};
         end else begin
-            if (uart_stb_i) begin
-                r_ack <= 1'b1;
-                r_err <= 1'b0;
+            case (uart_state)
+                `STATE_IDLE: begin
+                    if (uart_stb_i) begin
+                        uart_state <= `STATE_WAIT_FOR_PHASE_END;
 
-                if (uart_we_i) begin
-                    if (!uart_tx_transmitting_data) begin
-                        // trigger the transmitter to actuall start transmitting
-                        uart_tx_start <= 1'd1;
-                        // latch in the data to be sent
-                        uart_tx_buf <= uart_dat_i[7:0];
-                        // also this thing
-                        r_uart_out <= uart_dat_i[7:0];
+                        r_ack <= 1'b1;
+                        r_err <= 1'b0;
+
+                        if (uart_we_i) begin
+                            case (uart_adr_i[7:0])
+                                `UART_STAT: begin
+                                    // nop
+                                    // writing to UART_STAT is ignored
+                                end // `UART_STAT
+                                `UART_CTRL: begin
+                                    uart_ctrl <= uart_dat_i;
+                                end // `UART_CTRL
+                                `UART_DATA: begin
+                                    if (!uart_tx_transmitting_data) begin
+                                        // trigger the transmitter to actually start transmitting
+                                        uart_tx_start <= 1'd1;
+                                        // latch in the data to be sent
+                                        uart_tx_buf <= uart_dat_i[7:0];
+                                        // also this thing
+                                        r_uart_out <= uart_dat_i[7:0];
+                                    end
+                                end // `UART_DATA
+                                default: begin
+                                    // unknown register
+                                    // assert err_o
+                                    r_ack <= 1'b0;
+                                    r_err <= 1'b1;
+                                end
+                            endcase
+                        end else begin
+                            case (uart_adr_i[7:0])
+                                `UART_STAT: begin
+                                    r_dat_o <= { {63{1'h0}}, uart_tx_transmitting_data };
+                                end // `UART_STAT
+                                `UART_CTRL: begin
+                                    r_dat_o <= uart_ctrl;
+                                end // `UART_CTRL
+                                `UART_DATA: begin
+                                    r_dat_o <= 64'hfeeddeadbabebeef;
+                                end // `UART_DATA
+                                default: begin
+                                    // unknown register
+                                    // assert err_o
+                                    r_ack <= 1'b0;
+                                    r_err <= 1'b1;
+                                end
+                            endcase
+                        end
                     end
-                end
-            end
+                end // `STATE_IDLE
+                `STATE_WAIT_FOR_PHASE_END: begin
+                    if (~uart_stb_i) begin
+                        uart_state <= `STATE_IDLE;
+                        r_ack <= 1'h0;
+                        r_err <= 1'h0;
+                    end
+                end // `STATE_WAIT_FOR_PHASE_END
+            endcase
 
-            if (uart_tx_state == `STATE_TX_SEND_DATA)
+            if (uart_tx_state != `STATE_TX_IDLE)
                 // we have to disable the tx trigger, so it doesn't
                 // continuously send the same byte over and over
                 uart_tx_start <= 1'd0;
@@ -131,7 +195,6 @@ module uart (
                         uart_tx_state <= `STATE_TX_SEND_DATA;
                         // output the start bit
                         r_uart_tx <= 1'h0;
-                        uart_tx_transmitting_data <= 1'd1;
                         uart_tx_bit_idx <= 4'h0;
                     end else begin
                         // output high when idle
@@ -152,7 +215,6 @@ module uart (
             `STATE_TX_SEND_STOP: begin
                 // just let the stop bit clock in
                 uart_tx_state <= `STATE_TX_IDLE;
-                uart_tx_transmitting_data <= 1'd0;
             end // `STATE_TX_SEND_STOP
         endcase
     end
