@@ -113,10 +113,10 @@ module uart (
                 end
             end
 
-            // if (uart_tx_state == `STATE_TX_SEND_DATA)
+            if (uart_tx_state == `STATE_TX_SEND_DATA)
                 // we have to disable the tx trigger, so it doesn't
                 // continuously send the same byte over and over
-                // uart_tx_start <= 1'd0;
+                uart_tx_start <= 1'd0;
         end
     end
 
