@@ -37,7 +37,7 @@ module mimasv2_tb;
 	);
 
 	always begin
-		#10 Mv2_CLK = ~Mv2_CLK;
+		#5 Mv2_CLK = ~Mv2_CLK;
 	end
 
 	initial begin
