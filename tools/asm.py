@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
+import sys
+import argparse
 from lark import Lark, Transformer, v_args
 
-asm = """
-set r1, 0x00008010 shl 32
-set r2, 0x73
-load r3, r1
-store r2, r1 off 0x10
-load r3, r1
-nop
-nop
-halt
-halt
-"""
+prog_argp = argparse.ArgumentParser(description='Icarium assembler')
+prog_argp.add_argument('input',
+    nargs='?', metavar='input', type=argparse.FileType('r'),
+    default=sys.stdin,
+    help='the input text file (stdin by default)')
+prog_argp.add_argument('output',
+    nargs='?', metavar='output', type=argparse.FileType('w'),
+    default=sys.stdout,
+    help='the output file (stdout by default)')
+
+prog_args = prog_argp.parse_args()
 
 def ris(opcode, variant, reg, imm, shl = 0):
     return opcode << 57 | variant << 55 | reg << 50 | imm << 6 | shl
@@ -77,7 +79,7 @@ class Compiler(Transformer):
 
     def start(self, *args):
         for instr in [self, *args]:
-            print("{:016x}".format(instr))
+            print("{:016x}".format(instr), file = prog_args.output)
 
 parser = Lark(open("asm.lark"), parser = 'lalr', transformer = Compiler)
-tree = parser.parse(asm)
+tree = parser.parse(prog_args.input.read())
