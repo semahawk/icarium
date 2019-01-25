@@ -2,30 +2,6 @@
 
 from lark import Lark, Transformer, v_args
 
-grammar = """
-    start: instr*
-    instr: /set/ reg "," imm ["shl" imm] -> set
-          | /load/ reg "," reg ["off" imm] -> load
-          | /store/ reg "," reg ["off" imm] -> store
-          | /nop/ -> nop
-          | /halt/ -> halt
-
-    !reg: /r[0-9]+/ -> reg
-        | "pc" -> reg
-    !sep: /[\\n;]/
-
-    !imm: /0b[0-1]+/ -> imm
-        | /0c[0-7]+/ -> imm
-        | /(0d)?[0-9]+/ -> imm
-        | /0x[0-9a-fA-F]+/ -> imm
-
-    COMMENT: /#(.*)/
-
-    %import common.WS -> WS
-    %ignore COMMENT
-    %ignore WS
-"""
-
 asm = """
 set r1, 0x00008010 shl 32
 set r2, 0x73
@@ -103,5 +79,5 @@ class Compiler(Transformer):
         for instr in [self, *args]:
             print("{:016x}".format(instr))
 
-parser = Lark(grammar, parser = 'lalr', transformer = Compiler)
+parser = Lark(open("asm.lark"), parser = 'lalr', transformer = Compiler)
 tree = parser.parse(asm)
