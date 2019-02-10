@@ -1,9 +1,14 @@
 # a comment
 .base 0x800000000000
-set r1, 0x00008010 shl 32
-set r2, 0x73
-load r3, r1
-store r2, r1 off 0x10
-load r3, r1
-nop
-halt
+
+start:
+    set r1, 0x00008010 shl 32
+    set r2, 0x73
+    load r3, r1
+send_char:
+    store r2, r1 off 0x10
+    load r3, r1
+    nop
+    jump .send_char
+exit:
+    halt

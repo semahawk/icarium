@@ -34,12 +34,19 @@ class Instr():
 class Compiler(Transformer):
     def __init__(self):
         self.current_pc = 0x0
+        self.labels = {}
 
     def base(self, op, base_addr):
         new_pc = int(str(base_addr), base = 0)
         self.current_pc = new_pc
         # print("# setting current base addr to 0x{:x}".format(new_pc))
         return Instr(new_pc, emit = False)
+
+    def label(self, label):
+        label_name = label[:-1]
+        # print("# new label {} at 0x{:x}".format(label_name, self.current_pc))
+        self.labels[label_name] = self.current_pc
+        return Instr(label, emit = False)
 
     def reg(self, reg):
         if reg == "pc":
@@ -56,6 +63,15 @@ class Compiler(Transformer):
         if (imm == "#pc"):
             # print("# current pc is 0x{:x}".format(self.current_pc))
             return self.current_pc
+        elif (imm[0] == "."):
+            label_name = imm[1:]
+            try:
+                label_value = self.labels[label_name]
+            except:
+                raise Exception("label {} not found!".format(label_name))
+
+            # print("# label {} found with value {:x}".format(label_name, label_value))
+            return label_value
         else:
             raise Exception("unknown special immediate value: {}".format(imm))
 
@@ -83,6 +99,9 @@ class Compiler(Transformer):
         # print("{} r{}, r{} off {}".format(op, reg_src, reg_dst, off))
         self.current_pc += 8
         return rro(0b0000011, 0b00, reg_dst, reg_src, off)
+
+    def jump(self, op, imm):
+        return i(0b1000000, 0b00, imm)
 
     def start(self, *instr):
         for instr in instr:
