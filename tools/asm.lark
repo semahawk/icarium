@@ -4,6 +4,7 @@ instr: /set/ reg "," imm ["shl" imm] -> set
      | /store/ reg "," reg ["off" imm] -> store
      | /nop/ -> nop
      | /halt/ -> halt
+     | /\.base/ imm -> base
 
 !reg: /r[0-9]+/ -> reg
     | "pc" -> reg
@@ -13,6 +14,7 @@ instr: /set/ reg "," imm ["shl" imm] -> set
     | /0c[0-7]+/ -> imm
     | /(0d)?[0-9]+/ -> imm
     | /0x[0-9a-fA-F]+/ -> imm
+    | /#([a-zA-Z])+/ -> special_imm
 
 COMMENT: /#(.*)/
 
