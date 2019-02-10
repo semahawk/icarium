@@ -173,11 +173,13 @@ The `halt` instruction causes the CPU to halt. The only way of getting out of th
 
 ## Description
 
-Icarium sports a very simple UART controllers, which currently support a static configuration of 1 start bit, 8 data bits, 1 stop bit, 9600 baudrate.
+Icarium sports a very simple UART controller, which currently support a static configuration of 1 start bit, 8 data bits, no parity bits, 1 stop bit, 115200 baudrate.
 
 There are no FIFOs, no DMA, nothing fancy.
 
 ## Initialization
+
+The UART controller is initialized after power-on. You can simply start writing to `UART_DATA` to start transmitting bytes, or read from it when data is ready.
 
 ## Registers
 
@@ -191,10 +193,11 @@ There are no FIFOs, no DMA, nothing fancy.
 
 ### UART_STAT
 
-| Bit(s) | Name            | Reset value | Attribute | Description                                                  |
-| ------ | --------------- | ----------- | --------- | ------------------------------------------------------------ |
-| `63:1` | -               | `63'h0`     | RsvZ      | Reserved                                                     |
-| `0`    | `STAT_TXD_BUSY` | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting.<br />Note: if this bit is set, then any write to UART_DATA is ignored. |
+| Bit(s) | Name                  | Reset value | Attribute | Description                                                  |
+| ------ | --------------------- | ----------- | --------- | ------------------------------------------------------------ |
+| `62:1` | -                     | `62'h0`     | RsvZ      | Reserved                                                     |
+| `1`    | `STAT_RXD_DATA_READY` | `1'b0`      | RO        | Receiver data ready - if `1` then reading from `UART_DATA` will return valid data. |
+| `0`    | `STAT_TXD_BUSY`       | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting.<br />Note: if this bit is set, then any write to UART_DATA is ignored. |
 
 ### UART_CTRL
 
@@ -211,7 +214,7 @@ There are no FIFOs, no DMA, nothing fancy.
 | Bit(s) | Name   | Reset value | Attribute | Description                                                  |
 | ------ | ------ | ----------- | --------- | ------------------------------------------------------------ |
 | `63:8` | -      | `56'h0`     | RsvZ      | Reserved                                                     |
-| `7:0`  | `DATA` | `8'h0`      | RW        | Writing to this register will trigger a transmit of the character, and reading from it will return any previously read character.<br />Note: if `STAT_TXD_BUSY` is `1` then any writes to this register are ignored. |
+| `7:0`  | `DATA` | `8'h0`      | RW        | Writing to this register will trigger a transmit of the character, and reading from it will return any previously read character.<br /><br />Note: if `STAT_RXD_DATA_READY` is `0` then reading from this register will return invalid data<br />Note: if `STAT_TXD_BUSY` is `1` then any writes to this register are ignored. |
 
 # SPI
 

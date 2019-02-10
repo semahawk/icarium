@@ -20,6 +20,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 module mimasv2 (
     input Mv2_CLK,
+    input Mv2_UART0_RX,
     output Mv2_UART0_TX,
     output [7:0] Mv2_LED
 );
@@ -27,6 +28,7 @@ module mimasv2 (
     soc soc (
         .soc_clk_i(Mv2_CLK),
         .soc_rst_i(1'h0),
+        .soc_uart0_rx(Mv2_UART0_RX),
         .soc_uart0_tx(Mv2_UART0_TX),
         .soc_leds_o(Mv2_LED)
     );

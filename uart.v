@@ -30,6 +30,11 @@
 `define STATE_IDLE 0
 `define STATE_WAIT_FOR_PHASE_END 1
 
+// states of the receiver device
+`define STATE_RX_IDLE       0
+`define STATE_RX_RECV_DATA  1
+`define STATE_RX_RECV_STOP  2
+
 // states of the transmitter device
 `define STATE_TX_IDLE       0
 `define STATE_TX_SEND_DATA  1
@@ -44,7 +49,8 @@ module uart (
     output [7:0] uart_out,
 
     // the actual signals going in/out of the peripheral
-    output uart_tx
+    input uart_rx_i,
+    output uart_tx_o
 );
 
     // Wishbone signals
@@ -53,20 +59,47 @@ module uart (
     reg r_ack = 1'h0;
     reg r_err = 1'h0;
 
+    //
+    // the device's registers
+    //
     reg [`DAT_WIDTH-1:0] uart_ctrl;
 
     // internal state of the Wishbone slave
     reg [1:0] uart_state = `STATE_IDLE;
+
+    // this is the divided clock which the receiver and transmitter use
+    reg uart_baud_clk = 1'd0;
+    // increments on every clk_i, resets down to zero after every 9600 clocks
+    reg [31:0] uart_baud_counter = 32'd0;
+
+    //
+    // receiver
+    //
+    // internal state of the receiver
+    reg [4:0] uart_rx_state = `STATE_RX_IDLE;
+    // this is the sampling clock of the receiver (16x the baudrate)
+    reg uart_rx_sample_clk = 1'd0;
+    // this is the clock which is used for sampling at 16x the baudrate
+    reg [31:0] uart_rx_sample_counter = 32'd0;
+    // the receiver will store the data which it read right here
+    reg [7:0] uart_rx_buf = 8'h0;
+    // control signal to the receiver to start clocking in the data in uart_rx
+    reg uart_rx_start = 1'b0;
+    // index of the next bit to be sent
+    reg [3:0] uart_rx_bit_idx = 4'h0;
+    // indicates whether the receiver has sucessfully read a byte
+    reg uart_rx_data_ready = 1'b0;
+    reg uart_last_rx = 1'b1;
+
+    //
+    // transmitter
+    //
     // internal state of the transmitter
     reg [4:0] uart_tx_state = `STATE_TX_IDLE;
     // the data-to-be-sent will be latched into this shift-register
     reg [7:0] uart_tx_buf = 8'h0;
     // index of the next bit to be sent
     reg [3:0] uart_tx_bit_idx = 4'h0;
-    // this is the divided clock which the transmitter uses
-    reg uart_tx_baud_clk = 1'd0;
-    // increments on every clk_i, resets down to zero after every 9600 clocks
-    reg [31:0] uart_tx_baud_counter = 32'd0;
     reg uart_tx_start = 1'd0;
     // signals going in/out of the peripheral
     reg r_uart_tx = 1'd1;
@@ -85,23 +118,35 @@ module uart (
     assign uart_err_o = uart_stb_i ? r_err : 1'b0;
     assign uart_dat_o = r_dat_o;
     // the actual signals going in/out of the peripheral
-    assign uart_tx = uart_tx_state == `STATE_TX_IDLE ? 1'h1 : r_uart_tx;
+    assign uart_tx_o = uart_tx_state == `STATE_TX_IDLE ? 1'h1 : r_uart_tx;
     // just some debug output
     assign uart_out = r_uart_out;
 
-    // tx baud-clock generation logic
+    // baud-clock generation logic
     always @(posedge clk_i) begin
         if (rst_i) begin
-            uart_tx_baud_clk <= 1'h0;
-            uart_tx_baud_counter <= 32'h0;
+            uart_rx_sample_clk <= 1'h0;
+            uart_rx_sample_counter <= 32'h0;
+            uart_baud_clk <= 1'h0;
+            uart_baud_counter <= 32'h0;
         end else begin
             // 100MHz reference input clock / 115200 baudrate = 868
             // but the clock needs to toggle twice as fast
-            if (uart_tx_baud_counter < (868 / 2) - 1) begin
-                uart_tx_baud_counter <= uart_tx_baud_counter + 1;
+            // and we want to sample 16x
+            if (uart_rx_sample_counter < (868 / 16 / 2) - 1) begin
+                uart_rx_sample_counter <= uart_rx_sample_counter + 1;
             end else begin
-                uart_tx_baud_counter <= 32'h0;
-                uart_tx_baud_clk <= ~uart_tx_baud_clk;
+                uart_rx_sample_counter <= 32'h0;
+                uart_rx_sample_clk <= ~uart_rx_sample_clk;
+            end
+
+            // 100MHz reference input clock / 115200 baudrate = 868
+            // but the clock needs to toggle twice as fast
+            if (uart_baud_counter < (868 / 2) - 1) begin
+                uart_baud_counter <= uart_baud_counter + 1;
+            end else begin
+                uart_baud_counter <= 32'h0;
+                uart_baud_clk <= ~uart_baud_clk;
             end
         end
     end
@@ -136,8 +181,6 @@ module uart (
                                         uart_tx_start <= 1'd1;
                                         // latch in the data to be sent
                                         uart_tx_buf <= uart_dat_i[7:0];
-                                        // also this thing
-                                        r_uart_out <= uart_dat_i[7:0];
                                     end
                                 end // `UART_DATA
                                 default: begin
@@ -150,13 +193,17 @@ module uart (
                         end else begin
                             case (uart_adr_i[7:0])
                                 `UART_STAT: begin
-                                    r_dat_o <= { {63{1'h0}}, uart_tx_transmitting_data };
+                                    r_dat_o <= {
+                                        {62{1'h0}},
+                                        uart_rx_data_ready,
+                                        uart_tx_transmitting_data
+                                    };
                                 end // `UART_STAT
                                 `UART_CTRL: begin
                                     r_dat_o <= uart_ctrl;
                                 end // `UART_CTRL
                                 `UART_DATA: begin
-                                    r_dat_o <= 64'hfeeddeadbabebeef;
+                                    r_dat_o <= { {56{1'h0}}, uart_rx_buf };
                                 end // `UART_DATA
                                 default: begin
                                     // unknown register
@@ -184,8 +231,59 @@ module uart (
         end
     end
 
+    reg r_uart_rx, r_uart_rx_0;
+
+    always @(posedge uart_rx_sample_clk)
+        r_uart_rx_0 <= uart_rx_i;
+    always @(posedge uart_rx_sample_clk)
+        r_uart_rx <= r_uart_rx_0;
+
+    // the receiver's sampling block
+    always @(posedge uart_rx_sample_clk) begin
+        if (uart_last_rx == 1'b1 && r_uart_rx == 1'b0) begin
+            uart_rx_start <= 1'b1;
+        end
+
+        uart_last_rx <= r_uart_rx;
+
+        // reset the receiver start signal so it doesn't read continuously
+        if (uart_rx_state != `STATE_RX_IDLE)
+            uart_rx_start <= 1'b0;
+    end
+
+    // the receive block
+    always @(posedge uart_baud_clk) begin
+        case (uart_rx_state)
+            `STATE_RX_IDLE: begin
+                if (uart_rx_start) begin
+                    uart_rx_data_ready <= 1'b0;
+                    uart_rx_state <= `STATE_RX_RECV_DATA;
+                    uart_rx_bit_idx <= 4'h0;
+                end
+            end // `STATE_RX_IDLE
+            `STATE_RX_RECV_DATA: begin
+                if (uart_rx_bit_idx < 8) begin
+                    uart_rx_bit_idx <= uart_rx_bit_idx + 1;
+                    uart_rx_buf <= { r_uart_rx, uart_rx_buf[7:1] };
+                end else begin
+                    uart_rx_state <= `STATE_RX_RECV_STOP;
+                end
+            end // `STATE_RX_RECV_DATA
+            `STATE_RX_RECV_STOP: begin
+                // let the stop bit clock in
+                // FIXME any sanity checking that the stop bit really was a 1?
+                uart_rx_state <= `STATE_RX_IDLE;
+                uart_rx_data_ready <= 1'b1;
+
+                // this goes to the on-board LEDs
+                // let's have some debug
+                r_uart_out <= uart_rx_buf;
+            end // `STATE_RX_RECV_STOP
+        endcase
+    end
+
     // the transmit block
-    always @(posedge uart_tx_baud_clk) begin
+    always @(posedge uart_baud_clk) begin
         case (uart_tx_state)
             `STATE_TX_IDLE: begin
                 if (tx_wait_clocks > 0) begin

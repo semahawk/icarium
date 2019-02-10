@@ -122,8 +122,9 @@ module soc (
         // XXX: this is just temporary
         // XXX: just to have the UART controller be able to output stuff
         .uart_out(soc_leds_o),
-        // the UART's actual TX line
-        .uart_tx(soc_uart0_tx)
+        // the UART's actual Rx/TX lines
+        .uart_rx_i(soc_uart0_rx),
+        .uart_tx_o(soc_uart0_tx)
     );
 
     syscon syscon (
