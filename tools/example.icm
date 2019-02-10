@@ -8,7 +8,6 @@ start:
 send_char:
     store r2, r1 off 0x10
     load r3, r1
-    nop
     jump .send_char
 exit:
     halt

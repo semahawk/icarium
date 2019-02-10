@@ -123,6 +123,14 @@ store r3, r1, 0x20
 
 Will issue a write bus cycle with the data stored in address `r3` to the address stored in register `r1` having the offset `0x20` added
 
+### jump (immediate address)
+
+```
+jump <imm>
+```
+
+This is a pseudo-instruction, which will effectively emit `set pc, <imm> shl 0x0`
+
 ### halt
 
 Format: I

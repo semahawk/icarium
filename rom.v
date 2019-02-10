@@ -52,9 +52,10 @@ module rom (
             16'h0000: r_dat_o = 64'h0204000000200420; // set r1, 0x00008010 shl 32
             16'h0008: r_dat_o = 64'h0208000000001cc0; // set r2, 0x73 shl 0
             16'h0010: r_dat_o = 64'h040c200000000000; // load r3, r1 off 0
+                                                      // send_char:
             16'h0018: r_dat_o = 64'h0604400000000010; // store r2, r1 off 0x10
             16'h0020: r_dat_o = 64'h040c200000000000; // load r3, r1 off 0
-            16'h0028: r_dat_o = 64'h0000000000000000; // nop
+            16'h0028: r_dat_o = 64'h027c000000000600; // set pc, .send_char
             16'h0030: r_dat_o = 64'h0000000000000000; // nop
             16'h0038: r_dat_o = 64'hfe00000000000000; // halt
             default:  r_dat_o = 64'hfe00000000000000; // halt by default

@@ -82,6 +82,8 @@ module cpu (
     wire [4:0]  instr_rro_dst = instr[54:50];
     wire [4:0]  instr_rro_src = instr[49:45];
     wire [44:0] instr_rro_off = instr[44:0];
+    // fields of an I instruction (immediate)
+    wire [54:0] instr_i_imm   = instr[54:0];
 
     reg [`DAT_WIDTH-1:0] instr_dst_val;
     reg [1:0] op_store_fetch_dst_clocks = 2, op_store_fetch_src_clocks = 2;

@@ -101,13 +101,13 @@ class Compiler(Transformer):
         return rro(0b0000011, 0b00, reg_dst, reg_src, off)
 
     def jump(self, op, imm):
-        return i(0b1000000, 0b00, imm)
+        # simply emit a set pc, <imm>
+        return ris(0b0000001, 0b00, 31, imm, 0)
 
     def start(self, *instr):
         for instr in instr:
             if instr.emit:
                 print("{:016x}".format(instr.encoding), file = prog_args.output)
-                self.current_pc = 8
 
 parser = Lark(open("asm.lark"), parser = 'lalr', transformer = Compiler())
 tree = parser.parse(prog_args.input.read())
