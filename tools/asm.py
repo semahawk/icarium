@@ -13,6 +13,12 @@ prog_argp.add_argument('output',
     nargs='?', metavar='output', type=argparse.FileType('w'),
     default=sys.stdout,
     help='the output file (stdout by default)')
+prog_argp.add_argument('--hex', const='hex', dest='output_type', action='store_const',
+    help='output in ASCII hexadecimal numbers (default)')
+prog_argp.add_argument('--bin', const='bin', dest='output_type', action='store_const',
+    help='output in ASCII binary numbers')
+prog_argp.add_argument('--rom', const='rom', dest='output_type', action='store_const',
+    help='output suitable to plug into rom.v')
 
 prog_args = prog_argp.parse_args()
 
@@ -105,9 +111,20 @@ class Compiler(Transformer):
         return ris(0b0000001, 0b00, 31, imm, 0)
 
     def start(self, *instr):
+        rom_addr = 0x0
+
         for instr in instr:
             if instr.emit:
-                print("{:016x}".format(instr.encoding), file = prog_args.output)
+                if prog_args.output_type == 'hex' or prog_args.output_type == None:
+                    print("{:016x}".format(instr.encoding), file = prog_args.output)
+                elif prog_args.output_type == 'bin':
+                    print("{:064b}".format(instr.encoding), file = prog_args.output)
+                elif prog_args.output_type == 'rom':
+                    print("16'h{:04x}: r_dat_o = 64'h{:016x};".format(rom_addr, instr.encoding),
+                        file = prog_args.output)
+                    rom_addr += 8
+                else:
+                    raise Exception("unknown output type: {}".format(prog_args.output_type))
 
 parser = Lark(open("asm.lark"), parser = 'lalr', transformer = Compiler())
 tree = parser.parse(prog_args.input.read())
