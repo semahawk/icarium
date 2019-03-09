@@ -2,7 +2,7 @@
 .base 0x800000000000
 
 start:
-    set r1, 0x00008010 shl 32
+    set.z r1, 0x00008010 shl 16
     set r2, 0x73
     load r3, r1
 send_char:

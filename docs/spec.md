@@ -53,25 +53,31 @@ The goal for Icarium is for it to be a very simple, embedded 64-bit System on Ch
 
 All instructions are 64 bit wide.
 
-General instruction types:
+Every instruction can be executed conditionally.
+
+### Conditionals
+
+:construction: work in progress :construction:
+
+General instruction formats:
 
 ### RIS (register, immediate, shift)
 
-| Opcode (7 bits) | Variant (2 bits) | Register (5 bits) | Immediate value (44 bits) | Shift (6 bits) |
-| --------------- | ---------------- | ----------------- | ------------------------- | -------------- |
-| opcode [63:57]  | variant [56:55]  | reg [54:50]       | imm [49:6]                | shift [5:0]    |
+| Opcode (7 bits) | Format (2 bits) | Condition (4 bits) | Register (5 bits) | Immediate value (41 bits) | Shift (5 bits) |
+| --------------- | --------------- | ------------------ | ----------------- | ------------------------- | -------------- |
+| opcode [63:57]  | format [56:55]  | cond [54:51]       | reg [50:46]       | imm [45:5]                | shift [4:0]    |
 
 ### RRO (register, register, offset)
 
-| Opcode (7 bits) | Variant (2 bits) | Destination register (5 bits) | Source register (5 bits) | Offset (45 bits) |
-| --------------- | ---------------- | ----------------------------- | ------------------------ | ---------------- |
-| opcode [63:57]  | variant [56:55]  | dst_reg [54:50]               | src_reg [49:45]          | off [44:0]       |
+| Opcode (7 bits) | Format (2 bits) | Condition (4 bits) | Destination register (5 bits) | Source register (5 bits) | Offset (41 bits) |
+| --------------- | --------------- | ------------------ | ----------------------------- | ------------------------ | ---------------- |
+| opcode [63:57]  | format [56:55]  | cond [54:51]       | dst_reg [50:46]               | src_reg [45:41]          | off [40:0]       |
 
 ### I (immediate)
 
-| Opcode (7 bits) | Variant (2 bits) | Immediate value (55 bits) |
-| --------------- | ---------------- | ------------------------- |
-| opcode [63:57]  | variant [56:55]  | imm [54:0]                |
+| Opcode (7 bits) | Format (2 bits) | Condition (4 bits) | Immediate value (51 bits) |
+| --------------- | --------------- | ------------------ | ------------------------- |
+| opcode [63:57]  | format [56:55]  | cond [54:51]       | imm [50:0]                |
 
 ### nop
 
@@ -90,10 +96,10 @@ Opcode: `7'b0000001`
 Variant: `2'b00`
 
 ```
-set r1, 0x80000000 shl 32
+set r1, 0x80000000 shl 16
 ```
 
-Will set the register `r1` to the value `0x8000000000000000`
+Will set the register `r1` to the value `0x800000000000`
 
 ### load (using a register)
 
@@ -123,13 +129,17 @@ store r3, r1, 0x20
 
 Will issue a write bus cycle with the data stored in address `r3` to the address stored in register `r1` having the offset `0x20` added
 
+### and (with immediate value)
+
+_not implemented yet_ 
+
 ### jump (immediate address)
 
 ```
 jump <imm>
 ```
 
-This is a pseudo-instruction, which will effectively emit `set pc, <imm> shl 0x0`
+This instruction will set register `pc` to the specified `<imm>` value.
 
 ### halt
 

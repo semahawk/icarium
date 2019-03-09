@@ -35,6 +35,7 @@
 `define OP_SET   7'h01
 `define OP_LOAD  7'h02
 `define OP_STORE 7'h03
+`define OP_JUMP  7'h04
 `define OP_HALT  7'h7f
 
 module regs (
@@ -72,18 +73,19 @@ module cpu (
 
     reg [31:0] cpu_state = `STATE_INIT;
     reg [`DAT_WIDTH-1:0] instr;
-    wire [6:0]  instr_opcode  = instr[63:57];
-    wire [1:0]  instr_variant = instr[56:55];
+    wire [6:0]  instr_opcode    = instr[63:57];
+    wire [1:0]  instr_variant   = instr[56:55];
+    wire [3:0]  instr_condition = instr[54:51];
     // fields of an RIS instruction (register, immediate, shift)
-    wire [4:0]  instr_ris_reg = instr[54:50];
-    wire [43:0] instr_ris_imm = instr[49:6];
-    wire [5:0]  instr_ris_shl = instr[5:0];
+    wire [4:0]  instr_ris_reg = instr[50:46];
+    wire [40:0] instr_ris_imm = instr[45:5];
+    wire [4:0]  instr_ris_shl = instr[4:0];
     // fields of an RRO instruction (register, register, offset)
-    wire [4:0]  instr_rro_dst = instr[54:50];
-    wire [4:0]  instr_rro_src = instr[49:45];
-    wire [44:0] instr_rro_off = instr[44:0];
+    wire [4:0]  instr_rro_dst = instr[50:46];
+    wire [4:0]  instr_rro_src = instr[45:41];
+    wire [40:0] instr_rro_off = instr[40:0];
     // fields of an I instruction (immediate)
-    wire [54:0] instr_i_imm   = instr[54:0];
+    wire [50:0] instr_i_imm   = instr[50:0];
 
     reg [`DAT_WIDTH-1:0] instr_dst_val;
     reg [1:0] op_store_fetch_dst_clocks = 2, op_store_fetch_src_clocks = 2;
@@ -246,6 +248,14 @@ module cpu (
                                 end
                             end
                         end // `OP_LOAD
+                        `OP_JUMP: begin
+                            $display("%g: jump 0h%01x", $time, instr_i_imm);
+
+                            cpu_regs_write <= 1'b1;
+                            cpu_regs_id <= `REG_PC;
+                            cpu_regs_in <= instr_i_imm;
+                            cpu_state <= `STATE_REG_WRITE;
+                        end // `OP_JUMP
                         `OP_HALT: begin
                             $display("%g: halt", $time);
 

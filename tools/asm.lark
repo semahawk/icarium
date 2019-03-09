@@ -1,15 +1,18 @@
 start: instr*
-instr: /set/ reg "," imm ["shl" imm] -> set
-     | /load/ reg "," reg ["off" imm] -> load
-     | /store/ reg "," reg ["off" imm] -> store
-     | /nop/ -> nop
-     | /halt/ -> halt
-     | /jump/ imm -> jump
+instr: /nop/   ["." cond] -> nop
+     | /jump/  ["." cond] imm -> jump
+     | /set/   ["." cond] reg "," imm ["shl" imm] -> set
+     | /load/  ["." cond] reg "," reg ["off" imm] -> load
+     | /store/ ["." cond] reg "," reg ["off" imm] -> store
+     | /halt/  ["." cond] -> halt
      | /\.base/ imm -> base
      | /([a-zA-Z_][a-zA-Z0-9_]+):/ -> label
 
+!cond: /(z|nz)/ -> cond
+
 !reg: /r[0-9]+/ -> reg
     | "pc" -> reg
+
 !sep: /[\\n;]/
 
 !imm: /0b[0-1]+/ -> imm
