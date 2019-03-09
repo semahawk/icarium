@@ -31,12 +31,13 @@
 `define STATE_EXECUTE   4
 `define STATE_REG_WRITE 5
 
-`define OP_NOP   7'h00
-`define OP_SET   7'h01
-`define OP_LOAD  7'h02
-`define OP_STORE 7'h03
-`define OP_JUMP  7'h04
-`define OP_HALT  7'h7f
+`define OP_NOP     7'h00
+`define OP_SET     7'h01
+`define OP_LOAD    7'h02
+`define OP_STORE   7'h03
+`define OP_JUMP    7'h04
+`define OP_TESTBIT 7'h05
+`define OP_HALT    7'h7f
 
 module regs (
     input rst_i,
@@ -91,6 +92,7 @@ module cpu (
     reg [1:0] op_store_fetch_dst_clocks = 2, op_store_fetch_src_clocks = 2;
     reg [1:0] op_load_fetch_src_clocks = 2;
     reg [1:0] instr_fetch_clocks = 2'd2;
+    reg [1:0] op_testbit_fetch_reg_clocks = 2;
 
     reg [31:0] i;
 
@@ -98,6 +100,8 @@ module cpu (
     reg  [4:0]            cpu_regs_id = `REG_PC;
     reg  [`DAT_WIDTH-1:0] cpu_regs_in;
     wire [`DAT_WIDTH-1:0] cpu_regs_out;
+
+    reg cpu_stat_z = 1'b0;
 
     regs cpu_regs (
         .rst_i(rst_i),
@@ -156,11 +160,20 @@ module cpu (
 
                     if (cpu_ack_i) begin
                         $display("%g: read instruction %x", $time, cpu_dat_i);
+                        $display("%g: -- condition: 4'b%b", $time, cpu_dat_i[54:51]);
 
-                        cpu_state <= `STATE_EXECUTE;
-                        instr <= cpu_dat_i;
-                        cpu_stb_o <= 1'b0;
-                        cpu_cyc_o <= 1'b0;
+                        if (cpu_dat_i[54:51] == 4'b0001 /* .z */ && cpu_stat_z == 1'b0) begin
+                            $display("%g: -- condition not met - not executing the instruction", $time);
+                            cpu_state <= `STATE_REG_WRITE;
+                        end else if (cpu_dat_i[54:51] == 4'b1001 /* .nz */ && cpu_stat_z == 1'b1) begin
+                            $display("%g: -- condition not met - not executing the instruction", $time);
+                            cpu_state <= `STATE_REG_WRITE;
+                        end else begin
+                            cpu_state <= `STATE_EXECUTE;
+                            instr <= cpu_dat_i;
+                            cpu_stb_o <= 1'b0;
+                            cpu_cyc_o <= 1'b0;
+                        end
                     end else if (cpu_err_i) begin
                         $display("%g: err_i asserted when reading the next instruction",
                             $time, cpu_dat_i);
@@ -256,6 +269,27 @@ module cpu (
                             cpu_regs_in <= instr_i_imm;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_JUMP
+                        `OP_TESTBIT: begin
+                            $display("%g: testbit r%01d, %01d", $time,
+                                instr_ris_reg, instr_ris_imm);
+
+                            if (op_testbit_fetch_reg_clocks > 0) begin
+                                cpu_regs_write <= 1'b0;
+                                cpu_regs_id <= instr_ris_reg;
+                                op_testbit_fetch_reg_clocks <= op_testbit_fetch_reg_clocks - 1;
+                            end else begin
+                                if (cpu_regs_out & (64'b1 << instr_ris_imm)) begin
+                                    $display("%g: -- bit %01d is set - clearing CPU_STAT_Z", $time, instr_ris_imm);
+                                    cpu_stat_z <= 1'b0;
+                                end else begin
+                                    $display("%g: -- bit %01d is unset - setting CPU_STAT_Z", $time, instr_ris_imm);
+                                    cpu_stat_z <= 1'b1;
+                                end
+
+                                op_testbit_fetch_reg_clocks <= 2'd2;
+                                cpu_state <= `STATE_REG_WRITE;
+                            end
+                        end // `OP_TESTBIT
                         `OP_HALT: begin
                             $display("%g: halt", $time);
 

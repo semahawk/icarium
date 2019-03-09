@@ -1,13 +1,16 @@
-# a comment
+// a comment
 .base 0x800000000000
 
 start:
-    set.z r1, 0x00008010 shl 16
+    set r1, 0x00008010 shl 16
     set r2, 0x73
+check_if_ready_to_send:
     load r3, r1
+    testbit r3, 0
+    jump.nz #check_if_ready_to_send
 send_char:
     store r2, r1 off 0x10
     load r3, r1
-    jump .send_char
+    jump #check_if_ready_to_send
 exit:
     halt

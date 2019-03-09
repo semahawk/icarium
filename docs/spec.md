@@ -49,6 +49,18 @@ The goal for Icarium is for it to be a very simple, embedded 64-bit System on Ch
 | `r30` | General purpose                                              | `5'h1e`     |
 | `pc`  | Program counter.                                             | `5'h1f`     |
 
+## Status register
+
+The status register is an internal, 64-bit, inaccessible register, which showcases the CPU's internal state.
+
+| Bit(s) | Name               | Description                                                  |
+| ------ | ------------------ | ------------------------------------------------------------ |
+| `63:2` | _unused_           | RsvdZ                                                        |
+| `1`    | `CPU_STAT_Z`       | Set by various instructions if their execution ends in a '_zero_'  state, eg. if a register ends up with value `64'b0` |
+| `0`    | `CPU_STAT_RUNNING` | Set to `1` if the CPU is in a running state (ie. if it's not in the halted state) |
+
+
+
 ## Instruction set
 
 All instructions are 64 bit wide.
@@ -57,7 +69,26 @@ Every instruction can be executed conditionally.
 
 ### Conditionals
 
-:construction: work in progress :construction:
+You can make any instruction execute or not depending on the CPU's internal state, by appending one of the suffixes to the instruction's opcode, eg.
+
+```
+nop.z
+```
+
+will execute the `nop` instruction only if the `CPU_STAT_Z` flag was set.
+
+Full list of available conditionals:
+
+| Condition      | Description                           | Bit encoding | Condition      | Description                                 | Bit encoding |
+| -------------- | ------------------------------------- | ------------ | -------------- | ------------------------------------------- | ------------ |
+| _no condition_ | Always execute                        | `4'b0000`    | _no condition_ | Always execute                              | `4'b1000`    |
+| `.z`           | Zero - execute if `CPU_STAT_Z` is set | `4'b0001`    | `.nz`          | Not-zero - execute if `CPU_STAT_Z` is clear | `4'b1001`    |
+|                |                                       | `4'b0010`    |                |                                             | `4'b1010`    |
+|                |                                       | `4'b0011`    |                |                                             | `4'b1011`    |
+|                |                                       | `4'b0100`    |                |                                             | `4'b1100`    |
+|                |                                       | `4'b0101`    |                |                                             | `4'b1101`    |
+|                |                                       | `4'b0110`    |                |                                             | `4'b1110`    |
+|                |                                       | `4'b0111`    |                |                                             | `4'b1111`    |
 
 General instruction formats:
 
@@ -129,9 +160,29 @@ store r3, r1, 0x20
 
 Will issue a write bus cycle with the data stored in address `r3` to the address stored in register `r1` having the offset `0x20` added
 
-### and (with immediate value)
+### testbit
 
-_not implemented yet_ 
+Format: RIS
+
+Opcode: `7'h5`
+
+```
+testbit <reg>, <imm>
+```
+
+This instruction will test if bit at position indicated by `<imm>` in register `<reg>` is set or not, and it will clear flag `CPU_STAT_Z` if the bit is set, and it will set flag `CPU_STAT_Z` if it's unset.
+
+This instruction has no other side effects, except for changing the state of `CPU_STAT_Z`.
+
+For example:
+
+```
+set r1, 0b100
+testbit r1, 2
+jump.nz .always_jump
+```
+
+Will always perform the jump.
 
 ### jump (immediate address)
 

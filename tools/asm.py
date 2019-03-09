@@ -24,7 +24,11 @@ prog_args = prog_argp.parse_args()
 
 class Cond():
     def __init__(self, cond = None):
-        self.cond = cond
+        if cond != None and cond[0] == ".":
+            self.cond = cond[1:]
+        else:
+            self.cond = cond
+
         self.encodings = {
             None:   0b0000,
             "":     0b0000,
@@ -173,6 +177,13 @@ class Load(Instr):
     def __init__(self, mnem, opcode, format, cond, dst, src, off):
         super().__init__(mnem, opcode, format, cond, dst_reg = dst, src_reg = src, off = off)
 
+class Testbit(Instr):
+    def __init__(self, mnem, opcode, cond, reg, bitpos):
+        super().__init__(mnem, opcode, Format.RIS, cond, dst_reg = reg, imm = bitpos)
+
+    def __str__(self):
+        return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
+
 class Store(Instr):
     def __init__(self, mnem, opcode, format, cond, src, dst, off):
         # nb. src and dst are swapped here - not really though
@@ -217,6 +228,10 @@ class Compiler(Transformer):
         self.inc_pc()
         return Store("store", 0x03, Format.RRO, Cond(cond), src, dst, Off(off))
 
+    def testbit(self, op, cond, reg, imm):
+        self.inc_pc()
+        return Testbit("testbit", 0x05, Cond(cond), reg, imm)
+
     def base(self, op, base_addr):
         new_pc = int(str(base_addr), base = 0)
         self.current_pc = new_pc
@@ -241,10 +256,10 @@ class Compiler(Transformer):
         return int(str(value), base = 0)
 
     def special_imm(self, imm):
-        if (imm == "#pc"):
+        if imm == "#pc":
             print("# current pc is 0x{:x}".format(self.current_pc))
             return self.current_pc
-        elif (imm[0] == "."):
+        elif imm[0] == "#":
             label_name = imm[1:]
             try:
                 label_value = self.labels[label_name]
@@ -276,5 +291,5 @@ class Compiler(Transformer):
                 else:
                     raise Exception("unknown output type: {}".format(prog_args.output_type))
 
-parser = Lark(open("asm.lark"), parser = 'lalr', transformer = Compiler(), maybe_placeholders = True)
+parser = Lark(open("asm.lark"), lexer = 'contextual', parser = 'lalr', transformer = Compiler(), maybe_placeholders = True)
 tree = parser.parse(prog_args.input.read())
