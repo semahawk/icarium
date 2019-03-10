@@ -199,6 +199,7 @@ class Store(Instr):
 class Compiler(Transformer):
     def __init__(self):
         self.current_pc = 0x0
+        self.defines = {}
         self.labels = {}
 
     def inc_pc(self):
@@ -238,6 +239,11 @@ class Compiler(Transformer):
         print("# setting current base addr to 0x{:x}".format(new_pc))
         return Instr(0, 0, 0, emit = False)
 
+    def define(self, op, name, value):
+        print("# defining new name '{}' with value {} (0x{:x})".format(name, value, value))
+        self.defines[name] = value
+        return Instr(0, 0, 0, emit = False)
+
     def label(self, label):
         label_name = label[:-1]
         print("# new label {} at 0x{:x}".format(label_name, self.current_pc))
@@ -257,17 +263,21 @@ class Compiler(Transformer):
 
     def special_imm(self, imm):
         if imm == "#pc":
-            print("# current pc is 0x{:x}".format(self.current_pc))
+            print("# resolving #pc to 0x{:x}".format(self.current_pc))
             return self.current_pc
         elif imm[0] == "#":
-            label_name = imm[1:]
-            try:
-                label_value = self.labels[label_name]
-            except:
-                raise Exception("label {} not found!".format(label_name))
+            name = imm[1:]
 
-            print("# label {} found with value {:x}".format(label_name, label_value))
-            return label_value
+            if name in self.labels.keys():
+                value = self.labels[name]
+                print("# found label {} with value 0x{:x}".format(name, value))
+            elif name in self.defines.keys():
+                value = self.defines[name]
+                print("# found define {} with value 0x{:x}".format(name, value))
+            else:
+                raise Exception("special identifier #{} not found!".format(name))
+
+            return value
         else:
             raise Exception("unknown special immediate value: {}".format(imm))
 

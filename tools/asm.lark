@@ -7,6 +7,7 @@ instr: /nop/         ["." cond] -> nop
      | /testbit/     ["." cond] reg "," imm -> testbit
      | /halt/        ["." cond] -> halt
      | /\.base/ imm -> base
+     | /\.define/ NAME imm -> define
      | /([a-zA-Z_][a-zA-Z0-9_]+):/ -> label
 
 !cond: /(z|nz)/ -> cond
@@ -20,8 +21,9 @@ instr: /nop/         ["." cond] -> nop
     | /0c[0-7]+/ -> imm
     | /(0d)?[0-9]+/ -> imm
     | /0x[0-9a-fA-F]+/ -> imm
-    | /#([a-zA-Z])+/ -> special_imm
     | /#([a-zA-Z_][a-zA-Z0-9_]+)/ -> special_imm
+
+NAME: /[a-zA-Z_][a-zA-Z0-9_]+/
 
 COMMENT: "//" /[^\n]/*
 
