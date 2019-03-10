@@ -264,7 +264,7 @@ The UART controller is initialized after power-on. You can simply start writing 
 
 | Bit(s) | Name                  | Reset value | Attribute | Description                                                  |
 | ------ | --------------------- | ----------- | --------- | ------------------------------------------------------------ |
-| `64:2` | -                     | `62'h0`     | RsvZ      | Reserved                                                     |
+| `63:2` | -                     | `62'h0`     | RsvZ      | Reserved                                                     |
 | `1`    | `STAT_RXD_DATA_READY` | `1'b0`      | RO        | Receiver data ready - if `1` then reading from `UART_DATA` will return valid data. |
 | `0`    | `STAT_TXD_BUSY`       | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting.<br />Note: if this bit is set, then any write to UART_DATA is ignored. |
 

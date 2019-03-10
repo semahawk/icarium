@@ -2,7 +2,8 @@
 
 import sys
 import argparse
-from lark import Lark, Transformer, v_args
+from lark import Lark, Transformer, Visitor, v_args
+from lark.visitors import Interpreter, visit_children_decor
 
 prog_argp = argparse.ArgumentParser(description='Icarium assembler')
 prog_argp.add_argument('input',
@@ -195,12 +196,36 @@ class Store(Instr):
         elif self.format == Format.RRO:
             return "{}{} r{}, r{} {}".format(self.mnem, self.cond, self.src_reg, self.dst_reg, self.off)
 
-@v_args(inline = True)
-class Compiler(Transformer):
+class Env():
     def __init__(self):
-        self.current_pc = 0x0
-        self.defines = {}
         self.labels = {}
+        self.defines = {}
+
+    def new_label(self, name, address):
+        # TODO: check for conflicts/overwriting
+        self.labels[name] = address
+
+    def get_label(self, name):
+        if name in self.labels.keys():
+            return self.labels[name]
+        else:
+            return None
+
+    def new_define(self, name, value):
+        # TODO: check for conflicts/overwriting
+        self.defines[name] = value
+
+    def get_define(self, name):
+        if name in self.defines.keys():
+            return self.defines[name]
+        else:
+            return None
+
+@v_args(inline = True)
+class Emitter(Transformer):
+    def __init__(self, env):
+        self.current_pc = 0x0
+        self.env = env
 
     def inc_pc(self):
         self.current_pc += 8
@@ -236,18 +261,13 @@ class Compiler(Transformer):
     def base(self, op, base_addr):
         new_pc = int(str(base_addr), base = 0)
         self.current_pc = new_pc
-        print("# setting current base addr to 0x{:x}".format(new_pc))
+        print("# [emit] setting current base addr to 0x{:x}".format(new_pc))
         return Instr(0, 0, 0, emit = False)
 
     def define(self, op, name, value):
-        print("# defining new name '{}' with value {} (0x{:x})".format(name, value, value))
-        self.defines[name] = value
         return Instr(0, 0, 0, emit = False)
 
     def label(self, label):
-        label_name = label[:-1]
-        print("# new label {} at 0x{:x}".format(label_name, self.current_pc))
-        self.labels[label_name] = self.current_pc
         return Instr(0, 0, 0, emit = False)
 
     def reg(self, reg):
@@ -263,17 +283,17 @@ class Compiler(Transformer):
 
     def special_imm(self, imm):
         if imm == "#pc":
-            print("# resolving #pc to 0x{:x}".format(self.current_pc))
+            print("# [emit] resolving #pc to 0x{:x}".format(self.current_pc))
             return self.current_pc
         elif imm[0] == "#":
             name = imm[1:]
 
-            if name in self.labels.keys():
-                value = self.labels[name]
-                print("# found label {} with value 0x{:x}".format(name, value))
-            elif name in self.defines.keys():
-                value = self.defines[name]
-                print("# found define {} with value 0x{:x}".format(name, value))
+            if self.env.get_label(name) != None:
+                value = self.env.get_label(name)
+                print("# [emit] found label {} with value 0x{:x}".format(name, value))
+            elif self.env.get_define(name) != None:
+                value = self.env.get_define(name)
+                print("# [emit] found define {} with value 0x{:x}".format(name, value))
             else:
                 raise Exception("special identifier #{} not found!".format(name))
 
@@ -301,5 +321,79 @@ class Compiler(Transformer):
                 else:
                     raise Exception("unknown output type: {}".format(prog_args.output_type))
 
-parser = Lark(open("asm.lark"), lexer = 'contextual', parser = 'lalr', transformer = Compiler(), maybe_placeholders = True)
+        return instr
+
+@v_args(inline = True)
+class Prerun(Transformer):
+    def __init__(self, env):
+        self.current_pc = 0x0
+        self.env = env
+
+    def __default__(self, *args):
+        self.current_pc += 8
+
+    def base(self, op, imm):
+        print("# [prerun] setting new base address to 0x{:x}".format(imm))
+        self.current_pc = imm
+
+    def define(self, op, name, value):
+        print("# [prerun] defining new name '{}' with value {} (0x{:x})".format(name, value, value))
+        self.env.new_define(str(name), value)
+
+    def label(self, name):
+        label_name = name[:-1]
+        print("# [prerun] new label {} at 0x{:x}".format(label_name, self.current_pc))
+        self.env.new_label(label_name, self.current_pc)
+
+    def imm(self, imm):
+        return int(str(imm), base = 0)
+
+    def special_imm(self, imm):
+        if imm == "#pc":
+            print("# [prerun] resolving #pc to 0x{:x}".format(self.current_pc))
+            return self.current_pc
+        elif imm[0] == "#":
+            name = imm[1:]
+
+            if self.env.get_label(name) != None:
+                value = self.env.get_label(name)
+                print("# [prerun] found label {} with value 0x{:x}".format(name, value))
+            elif self.env.get_define(name) != None:
+                value = self.env.get_define(name)
+                print("# [prerun] found define {} with value 0x{:x}".format(name, value))
+            else:
+                value = 1337
+
+            return value
+        else:
+            raise Exception("unknown special immediate value: {}".format(imm))
+
+    def cond(self, cond):
+        pass
+    def reg(self, reg):
+        pass
+    def start(self, *instructions):
+        pass
+
+env = Env()
+
+parser = Lark(open("asm.lark"), lexer = 'contextual', parser = 'lalr', maybe_placeholders = True)
 tree = parser.parse(prog_args.input.read())
+
+Prerun(env).transform(tree)
+
+print()
+print("Prerun finished.")
+print("Defines:")
+for key in env.defines.keys():
+    print("{:>24s} => 0x{:016x} ({})".format(key, env.defines[key], env.defines[key]))
+
+print("Labels:")
+for key in env.labels.keys():
+    print("{:>24s} => 0x{:016x} ({})".format(key, env.labels[key], env.labels[key]))
+
+print()
+print("Emitting the instructions:")
+print()
+
+Emitter(env).transform(tree)
