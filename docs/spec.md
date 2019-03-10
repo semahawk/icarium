@@ -55,7 +55,7 @@ The status register is an internal, 64-bit, inaccessible register, which showcas
 
 | Bit(s) | Name               | Description                                                  |
 | ------ | ------------------ | ------------------------------------------------------------ |
-| `63:2` | _unused_           | RsvdZ                                                        |
+| `63:2` | _unused_           | RsvZ                                                         |
 | `1`    | `CPU_STAT_Z`       | Set by various instructions if their execution ends in a '_zero_'  state, eg. if a register ends up with value `64'b0` |
 | `0`    | `CPU_STAT_RUNNING` | Set to `1` if the CPU is in a running state (ie. if it's not in the halted state) |
 
@@ -264,7 +264,7 @@ The UART controller is initialized after power-on. You can simply start writing 
 
 | Bit(s) | Name                  | Reset value | Attribute | Description                                                  |
 | ------ | --------------------- | ----------- | --------- | ------------------------------------------------------------ |
-| `62:1` | -                     | `62'h0`     | RsvZ      | Reserved                                                     |
+| `64:2` | -                     | `62'h0`     | RsvZ      | Reserved                                                     |
 | `1`    | `STAT_RXD_DATA_READY` | `1'b0`      | RO        | Receiver data ready - if `1` then reading from `UART_DATA` will return valid data. |
 | `0`    | `STAT_TXD_BUSY`       | `1'b0`      | RO        | Transmitter busy - if `1` then the controller is currently transmitting.<br />Note: if this bit is set, then any write to UART_DATA is ignored. |
 
