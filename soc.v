@@ -34,6 +34,7 @@ module soc (
 
     `WB_MASTER_WIRE_SIGNALS(cpu_);
     `WB_SLAVE_WIRE_SIGNALS(rom_);
+    `WB_SLAVE_WIRE_SIGNALS(ram_);
     `WB_SLAVE_WIRE_SIGNALS(uart_);
     `WB_SLAVE_WIRE_SIGNALS(syscon_);
 
@@ -67,7 +68,7 @@ module soc (
 
     intercon #(
         .MASTERS_NUM(1),
-        .SLAVES_NUM(3)
+        .SLAVES_NUM(4)
     ) intercon (
         .rst_i(syscon_rst_i),
         .clk_i(syscon_clk_i),
@@ -80,10 +81,10 @@ module soc (
         .i2m_ack_o({ cpu_ack_i }),
         .i2m_err_o({ cpu_err_i }),
         .i2m_dat_o({ masters_dat_i }),
-        .s2i_ack_i({ syscon_ack_o, rom_ack_o, uart_ack_o }),
-        .s2i_err_i({ syscon_err_o, rom_err_o, uart_err_o }),
-        .s2i_dat_i({ syscon_dat_o, rom_dat_o, uart_dat_o }),
-        .i2s_stb_o({ syscon_stb_i, rom_stb_i, uart_stb_i }),
+        .s2i_ack_i({ ram_ack_o, syscon_ack_o, rom_ack_o, uart_ack_o }),
+        .s2i_err_i({ ram_err_o, syscon_err_o, rom_err_o, uart_err_o }),
+        .s2i_dat_i({ ram_dat_o, syscon_dat_o, rom_dat_o, uart_dat_o }),
+        .i2s_stb_o({ ram_stb_i, syscon_stb_i, rom_stb_i, uart_stb_i }),
         .i2s_cyc_o({ slave_cyc_i }),
         .i2s_adr_o({ slave_adr_i }),
         .i2s_dat_o({ slave_dat_i }),
@@ -105,6 +106,22 @@ module soc (
         .rom_dat_o(rom_dat_o),
         .rom_ack_o(rom_ack_o),
         .rom_err_o(rom_err_o)
+    );
+
+    ram #(
+        .WORDS(128)
+    ) ram (
+        .rst_i(syscon_rst_i),
+        .clk_i(syscon_clk_i),
+        .ram_stb_i(ram_stb_i),
+        .ram_cyc_i(slave_cyc_i),
+        .ram_we_i(slave_we_i),
+        .ram_sel_i(slave_sel_i),
+        .ram_adr_i(slave_adr_i),
+        .ram_dat_i(slave_dat_i),
+        .ram_dat_o(ram_dat_o),
+        .ram_ack_o(ram_ack_o),
+        .ram_err_o(ram_err_o)
     );
 
     uart uart (

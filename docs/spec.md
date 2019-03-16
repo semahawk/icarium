@@ -232,6 +232,12 @@ The `halt` instruction causes the CPU to halt. The only way of getting out of th
 
 # SRAM
 
+Just a simple static RAM.
+
+On reset all RAM contents are initialized to `0x0`.
+
+Note: access is always done using 8-byte words, and the lowest 3 bits of the address are completely ignored. This means, that eg. accessing `0x800080000002` will return the 8-byte word from `0x800080000000`
+
 # Syscon
 
 # Interconnect

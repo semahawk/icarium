@@ -99,6 +99,11 @@ module intercon (
                 // ROM
                 selected_slave <= 1;
             else
+            if (granted_masters_adr_i >= 64'h0000800080000000 &&
+                granted_masters_adr_i <  64'h0000800080000400)
+                // RAM
+                selected_slave <= 3;
+            else
             if (granted_masters_adr_i >= 64'h0000800100000000 &&
                 granted_masters_adr_i <  64'h0000800100400000)
                 // SYSCON

@@ -7,6 +7,20 @@
 .include uart
 
 start:
+    // set r10 to RAM base (0x800080000000)
+    set   r10, 0x80008000 shl 16
+    load  r11, r10 off 0x00
+    load  r12, r10 off 0x08
+    load  r13, r10 off 0x10
+
+    store r10, r10 off 0x00
+    store r10, r10 off 0x08
+    store r10, r10 off 0x10
+
+    load  r14, r10 off 0x00
+    load  r15, r10 off 0x08
+    load  r16, r10 off 0x10
+
     set r1, 0x00008010 shl 16
     set r2, 0x73
 check_if_ready_to_send:
