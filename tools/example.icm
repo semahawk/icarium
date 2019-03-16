@@ -4,10 +4,7 @@
 .base #ROM_BASE_ADDR
 .define THERE #pc
 
-.define UART_STAT 0x00
-.define UART_STAT_TXD_BUSY 0
-.define UART_CTRL 0x08
-.define UART_DATA 0x10
+.include uart
 
 start:
     set r1, 0x00008010 shl 16

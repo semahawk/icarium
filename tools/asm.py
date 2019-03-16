@@ -2,8 +2,8 @@
 
 import sys
 import argparse
-from lark import Lark, Transformer, Visitor, v_args
-from lark.visitors import Interpreter, visit_children_decor
+from lark import Lark, Transformer, Visitor, Tree, Token, v_args
+from lark.visitors import Transformer_InPlace, Interpreter, visit_children_decor
 
 prog_argp = argparse.ArgumentParser(description='Icarium assembler')
 prog_argp.add_argument('input',
@@ -309,7 +309,7 @@ class Emitter(Transformer):
         rom_addr = 0x0
 
         for instr in instr:
-            if instr.emittable():
+            if isinstance(instr, Instr) and instr.emittable():
                 if prog_args.output_type == 'hex' or prog_args.output_type == None:
                     print("{:016x}".format(instr.emit()), file = prog_args.output)
                 elif prog_args.output_type == 'bin':
@@ -368,6 +368,8 @@ class Prerun(Transformer):
         else:
             raise Exception("unknown special immediate value: {}".format(imm))
 
+    def include(self, op, path):
+        pass
     def cond(self, cond):
         pass
     def reg(self, reg):
@@ -375,11 +377,22 @@ class Prerun(Transformer):
     def start(self, *instructions):
         pass
 
+@v_args(inline = True)
+class IncludeRun(Transformer_InPlace):
+    def include(self, op, path):
+        print("# [include] including file {}.icm into the compilation".format(path))
+        parser = Lark(open("asm.lark"), lexer = 'contextual', parser = 'lalr', maybe_placeholders = True)
+        with open(path + ".icm", "r") as f:
+            tree = parser.parse(f.read())
+            IncludeRun().transform(tree)
+        return tree
+
 env = Env()
 
 parser = Lark(open("asm.lark"), lexer = 'contextual', parser = 'lalr', maybe_placeholders = True)
 tree = parser.parse(prog_args.input.read())
 
+IncludeRun().transform(tree)
 Prerun(env).transform(tree)
 
 print()

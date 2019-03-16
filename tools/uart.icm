@@ -1,0 +1,9 @@
+//
+// Register and bit position definitions
+// of the UART controller
+//
+
+.define UART_STAT 0x00
+.define UART_STAT_TXD_BUSY 0
+.define UART_CTRL 0x08
+.define UART_DATA 0x10
