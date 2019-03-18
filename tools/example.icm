@@ -11,6 +11,7 @@ start:
     set r2, 0x73
     // we'll send only this many characters
     set r4, 3
+    set r5, 1
 
 check_if_ready_to_send:
     load r3, r1 off #UART_STAT
@@ -18,6 +19,9 @@ check_if_ready_to_send:
     jump.nz #check_if_ready_to_send
 send_char:
     store r2, r1 off #UART_DATA
+
+    // just for fun
+    shiftl r5, 1
 
     // decrease the counter and exit if already at zero
     sub r4, 1

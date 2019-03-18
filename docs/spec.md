@@ -207,6 +207,18 @@ will result in `r1` having the value `0xffffffffffffffff`. Unfortunately, there'
 
 Side effects: `CPU_STAT_Z` will be set if `<reg> - <imm> == 64'h0`. In other case, `CPU_STAT_Z` will be cleared.
 
+### shiftl (immediate value)
+
+Format: RIS
+
+Opcode: `7'h7`
+
+```
+shiftl <reg>, <imm>
+```
+
+Will effectively perform `reg = reg << imm`. No side effects.
+
 ### jump (immediate address)
 
 ```

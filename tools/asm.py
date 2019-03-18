@@ -192,6 +192,13 @@ class Sub(Instr):
     def __str__(self):
         return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
 
+class Shiftl(Instr):
+    def __init__(self, mnem, opcode, cond, reg, shift):
+        super().__init__(mnem, opcode, Format.RIS, cond, dst_reg = reg, imm = shift)
+
+    def __str__(self):
+        return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
+
 class Store(Instr):
     def __init__(self, mnem, opcode, format, cond, src, dst, off):
         # nb. src and dst are swapped here - not really though
@@ -268,6 +275,10 @@ class Emitter(Transformer):
     def sub(self, op, cond, reg, sub_value):
         self.inc_pc()
         return Sub("sub", 0x06, Cond(cond), reg, sub_value)
+
+    def shiftl(self, op, cond, reg, shift):
+        self.inc_pc()
+        return Shiftl("shiftl", 0x07, Cond(cond), reg, shift)
 
     def base(self, op, base_addr):
         new_pc = int(str(base_addr), base = 0)
