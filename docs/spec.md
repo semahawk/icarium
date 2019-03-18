@@ -49,6 +49,8 @@ The goal for Icarium is for it to be a very simple, embedded 64-bit System on Ch
 | `r30` | General purpose                                              | `5'h1e`     |
 | `pc`  | Program counter.                                             | `5'h1f`     |
 
+Note: All general purpose registers have a default value of `0x0` after a reset.
+
 ## Status register
 
 The status register is an internal, 64-bit, inaccessible register, which showcases the CPU's internal state.

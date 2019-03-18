@@ -28,8 +28,9 @@
 `define STATE_INIT      1
 `define STATE_FETCH     2
 `define STATE_DECODE    3
-`define STATE_EXECUTE   4
-`define STATE_REG_WRITE 5
+`define STATE_REG_READ  4
+`define STATE_EXECUTE   5
+`define STATE_REG_WRITE 6
 
 `define OP_NOP     7'h00
 `define OP_SET     7'h01
@@ -38,6 +39,11 @@
 `define OP_JUMP    7'h04
 `define OP_TESTBIT 7'h05
 `define OP_HALT    7'h7f
+
+// those values should be encoded into the instruction
+`define INSTR_FORMAT_RRO  2'b00
+`define INSTR_FORMAT_RIS  2'b01
+`define INSTR_FORMAT_I    2'b10
 
 module regs (
     input rst_i,
@@ -49,10 +55,15 @@ module regs (
 );
 
     reg [`DAT_WIDTH-1:0] regs [0:`REG_PC];
+    integer i;
 
     always @(posedge clk_i) begin
         if (rst_i) begin
-            regs[`REG_ZERO] <= 64'h0;
+            // initialize all registers to 0x0
+            for (i = `REG_ZERO; i < `REG_PC; i = i + 1) begin
+                regs[i] <= {`DAT_WIDTH{1'b0}};
+            end
+            // except for pc, which gets to point to ROM
             regs[`REG_PC] <= 64'h800000000000;
         end else begin
             if (we_i) begin
@@ -75,7 +86,7 @@ module cpu (
     reg [31:0] cpu_state = `STATE_INIT;
     reg [`DAT_WIDTH-1:0] instr;
     wire [6:0]  instr_opcode    = instr[63:57];
-    wire [1:0]  instr_variant   = instr[56:55];
+    wire [1:0]  instr_format    = instr[56:55];
     wire [3:0]  instr_condition = instr[54:51];
     // fields of an RIS instruction (register, immediate, shift)
     wire [4:0]  instr_ris_reg = instr[50:46];
@@ -88,13 +99,13 @@ module cpu (
     // fields of an I instruction (immediate)
     wire [50:0] instr_i_imm   = instr[50:0];
 
-    reg [`DAT_WIDTH-1:0] instr_dst_val;
-    reg [1:0] op_store_fetch_dst_clocks = 2, op_store_fetch_src_clocks = 2;
-    reg [1:0] op_load_fetch_src_clocks = 2;
     reg [1:0] instr_fetch_clocks = 2'd2;
-    reg [1:0] op_testbit_fetch_reg_clocks = 2;
+    reg [1:0] fetch_dst_reg_clocks = 2'd2;
+    reg [1:0] fetch_src_reg_clocks = 2'd2;
+    reg [`DAT_WIDTH-1:0] instr_dst_reg_val;
+    reg [`DAT_WIDTH-1:0] instr_src_reg_val;
 
-    reg [31:0] i;
+    integer i;
 
     reg                   cpu_regs_write = 1'b0;
     reg  [4:0]            cpu_regs_id = `REG_PC;
@@ -117,9 +128,8 @@ module cpu (
             cpu_state <= `STATE_INIT;
             cpu_regs_write <= 1'b0;
             cpu_regs_id <= `REG_PC;
-            op_store_fetch_dst_clocks <= 2'd2;
-            op_store_fetch_src_clocks <= 2'd2;
-            op_load_fetch_src_clocks <= 2'd2;
+            fetch_dst_reg_clocks = 2'd2;
+            fetch_src_reg_clocks = 2'd2;
         end else begin
             case (cpu_state)
                 `STATE_HALT: begin
@@ -133,7 +143,7 @@ module cpu (
                 // issue a read bus cycle, to the address
                 // which is currently stored in the `pc` register
                 `STATE_FETCH: begin
-                    $display("%g: fetching instruction at pc:%x", $time, cpu_regs_out);
+                    $monitor("%g: fetching instruction at pc:%x", $time, cpu_regs_out);
 
                     if (instr_fetch_clocks > 0) begin
                         cpu_regs_write <= 1'b0;
@@ -160,16 +170,22 @@ module cpu (
 
                     if (cpu_ack_i) begin
                         $display("%g: read instruction %x", $time, cpu_dat_i);
-                        $display("%g: -- condition: 4'b%b", $time, cpu_dat_i[54:51]);
+                        // $display("%g: -- condition: 4'b%b", $time, cpu_dat_i[54:51]);
 
                         if (cpu_dat_i[54:51] == 4'b0001 /* .z */ && cpu_stat_z == 1'b0) begin
-                            $display("%g: -- condition not met - not executing the instruction", $time);
+                            // $display("%g: -- condition not met - not executing the instruction", $time);
                             cpu_state <= `STATE_REG_WRITE;
                         end else if (cpu_dat_i[54:51] == 4'b1001 /* .nz */ && cpu_stat_z == 1'b1) begin
-                            $display("%g: -- condition not met - not executing the instruction", $time);
+                            // $display("%g: -- condition not met - not executing the instruction", $time);
                             cpu_state <= `STATE_REG_WRITE;
                         end else begin
-                            cpu_state <= `STATE_EXECUTE;
+                            // `instr` will be set on the next cycle, so
+                            //  we can't use the instr_format here
+                            if (cpu_dat_i[56:55] == `INSTR_FORMAT_RIS || cpu_dat_i[56:55] == `INSTR_FORMAT_RRO)
+                                cpu_state <= `STATE_REG_READ;
+                            else
+                                cpu_state <= `STATE_EXECUTE;
+
                             instr <= cpu_dat_i;
                             cpu_stb_o <= 1'b0;
                             cpu_cyc_o <= 1'b0;
@@ -181,6 +197,33 @@ module cpu (
                         cpu_state <= `STATE_HALT;
                     end
                 end // `STATE_DECODE
+                `STATE_REG_READ: begin
+                    if (fetch_dst_reg_clocks > 0) begin
+                        if (instr_format == `INSTR_FORMAT_RRO)
+                            cpu_regs_id <= instr_rro_dst;
+                        else if (instr_format == `INSTR_FORMAT_RIS)
+                            cpu_regs_id <= instr_ris_reg;
+
+                        cpu_regs_write <= 1'b0;
+                        fetch_dst_reg_clocks <= fetch_dst_reg_clocks - 1;
+                    end else if (fetch_src_reg_clocks > 0) begin
+                        if (instr_format == `INSTR_FORMAT_RIS) begin
+                            cpu_state <= `STATE_EXECUTE;
+                            fetch_dst_reg_clocks <= 2'd2;
+                            fetch_src_reg_clocks <= 2'd2;
+                        end else begin
+                            instr_dst_reg_val <= cpu_regs_out;
+                            cpu_regs_write <= 1'b0;
+                            cpu_regs_id <= instr_rro_src;
+                            fetch_src_reg_clocks <= fetch_src_reg_clocks - 1;
+                        end
+                    end else begin
+                        instr_src_reg_val <= cpu_regs_out;
+                        cpu_state <= `STATE_EXECUTE;
+                        fetch_dst_reg_clocks <= 2'd2;
+                        fetch_src_reg_clocks <= 2'd2;
+                    end
+                end
                 `STATE_EXECUTE: begin
                     case (instr_opcode)
                         `OP_NOP: begin
@@ -201,64 +244,38 @@ module cpu (
                             $display("%g: load r%1d, r%1d off 0h%01x",
                                 $time, instr_rro_dst, instr_rro_src, instr_rro_off);
 
-                            if (op_load_fetch_src_clocks > 0) begin
-                                $display("%g: loading value from register r%1d", $time, instr_rro_src);
-                                cpu_regs_write <= 1'b0;
-                                cpu_regs_id <= instr_rro_src;
-                                op_load_fetch_src_clocks <= op_load_fetch_src_clocks - 1;
-                            end else begin
-                                $display("%g: -- r%1d -> %x", $time, instr_rro_src, cpu_regs_out);
-                                cpu_stb_o <= 1'b1;
-                                cpu_cyc_o <= 1'b1;
-                                cpu_we_o <= 1'b0;
-                                cpu_sel_o <= 8'hff;
-                                cpu_adr_o <= cpu_regs_out + instr_rro_off;
+                            cpu_stb_o <= 1'b1;
+                            cpu_cyc_o <= 1'b1;
+                            cpu_we_o <= 1'b0;
+                            cpu_sel_o <= 8'hff;
+                            cpu_adr_o <= instr_src_reg_val + instr_rro_off;
 
-                                $display("%g: -- adr_o: %x", $time, cpu_regs_out + instr_rro_off);
-
-                                if (cpu_ack_i) begin
-                                    $display("%g: -- data read: %x", $time, cpu_dat_i);
-
-                                    cpu_stb_o <= 1'b0;
-                                    cpu_cyc_o <= 1'b0;
-                                    cpu_regs_write <= 1'b1;
-                                    cpu_regs_id <= instr_rro_dst;
-                                    cpu_regs_in <= cpu_dat_i;
-                                    cpu_state <= `STATE_REG_WRITE;
-                                    op_load_fetch_src_clocks <= 2'd2;
-                                end
+                            if (cpu_ack_i) begin
+                                cpu_stb_o <= 1'b0;
+                                cpu_cyc_o <= 1'b0;
+                                cpu_regs_write <= 1'b1;
+                                cpu_regs_id <= instr_rro_dst;
+                                cpu_regs_in <= cpu_dat_i;
+                                cpu_state <= `STATE_REG_WRITE;
                             end
                         end // `OP_LOAD
                         `OP_STORE: begin
                             $display("%g: store r%1d, r%1d off 0h%01x",
                                 $time, instr_rro_src, instr_rro_dst, instr_rro_off);
 
-                            if (op_store_fetch_dst_clocks > 0) begin
-                                cpu_regs_write <= 1'b0;
-                                cpu_regs_id <= instr_rro_dst;
-                                op_store_fetch_dst_clocks <= op_store_fetch_dst_clocks - 1;
-                            end else if (op_store_fetch_src_clocks > 0) begin
-                                instr_dst_val <= cpu_regs_out;
-                                cpu_regs_write <= 1'b0;
-                                cpu_regs_id <= instr_rro_src;
-                                op_store_fetch_src_clocks <= op_store_fetch_src_clocks - 1;
-                            end else begin
-                                cpu_stb_o <= 1'b1;
-                                cpu_cyc_o <= 1'b1;
-                                cpu_we_o <= 1'b1;
-                                cpu_sel_o <= 8'hff;
-                                cpu_adr_o <= instr_dst_val + instr_rro_off;
-                                cpu_dat_o <= cpu_regs_out;
+                            cpu_stb_o <= 1'b1;
+                            cpu_cyc_o <= 1'b1;
+                            cpu_we_o <= 1'b1;
+                            cpu_sel_o <= 8'hff;
+                            cpu_adr_o <= instr_dst_reg_val + instr_rro_off;
+                            cpu_dat_o <= instr_src_reg_val;
 
-                                if (cpu_ack_i) begin
-                                    $display("%g: -- written %x to address %x", $time, cpu_dat_o, cpu_adr_o);
-                                    cpu_stb_o <= 1'b0;
-                                    cpu_cyc_o <= 1'b0;
-                                    cpu_we_o <= 1'b0;
-                                    op_store_fetch_dst_clocks <= 2'd2;
-                                    op_store_fetch_src_clocks <= 2'd2;
-                                    cpu_state <= `STATE_REG_WRITE;
-                                end
+                            if (cpu_ack_i) begin
+                                // $display("%g: -- written %x to address %x", $time, cpu_dat_o, cpu_adr_o);
+                                cpu_stb_o <= 1'b0;
+                                cpu_cyc_o <= 1'b0;
+                                cpu_we_o <= 1'b0;
+                                cpu_state <= `STATE_REG_WRITE;
                             end
                         end // `OP_LOAD
                         `OP_JUMP: begin
@@ -273,22 +290,15 @@ module cpu (
                             $display("%g: testbit r%01d, %01d", $time,
                                 instr_ris_reg, instr_ris_imm);
 
-                            if (op_testbit_fetch_reg_clocks > 0) begin
-                                cpu_regs_write <= 1'b0;
-                                cpu_regs_id <= instr_ris_reg;
-                                op_testbit_fetch_reg_clocks <= op_testbit_fetch_reg_clocks - 1;
+                            if (instr_dst_reg_val & (64'b1 << instr_ris_imm)) begin
+                                // $display("%g: -- bit %01d is set - clearing CPU_STAT_Z", $time, instr_ris_imm);
+                                cpu_stat_z <= 1'b0;
                             end else begin
-                                if (cpu_regs_out & (64'b1 << instr_ris_imm)) begin
-                                    $display("%g: -- bit %01d is set - clearing CPU_STAT_Z", $time, instr_ris_imm);
-                                    cpu_stat_z <= 1'b0;
-                                end else begin
-                                    $display("%g: -- bit %01d is unset - setting CPU_STAT_Z", $time, instr_ris_imm);
-                                    cpu_stat_z <= 1'b1;
-                                end
-
-                                op_testbit_fetch_reg_clocks <= 2'd2;
-                                cpu_state <= `STATE_REG_WRITE;
+                                // $display("%g: -- bit %01d is unset - setting CPU_STAT_Z", $time, instr_ris_imm);
+                                cpu_stat_z <= 1'b1;
                             end
+
+                            cpu_state <= `STATE_REG_WRITE;
                         end // `OP_TESTBIT
                         `OP_HALT: begin
                             $display("%g: halt", $time);
@@ -300,7 +310,7 @@ module cpu (
                 `STATE_REG_WRITE: begin
                     // let the register write clock in
                     // and then read out the PC register so FETCH has it
-                    $display("%g: reg write", $time);
+                    // $display("%g: reg write", $time);
                     cpu_regs_write <= 1'b0;
                     cpu_regs_id <= `REG_PC;
                     cpu_state <= `STATE_FETCH;
