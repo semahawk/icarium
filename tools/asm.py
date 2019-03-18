@@ -185,6 +185,13 @@ class Testbit(Instr):
     def __str__(self):
         return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
 
+class Sub(Instr):
+    def __init__(self, mnem, opcode, cond, reg, sub_value):
+        super().__init__(mnem, opcode, Format.RIS, cond, dst_reg = reg, imm = sub_value)
+
+    def __str__(self):
+        return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
+
 class Store(Instr):
     def __init__(self, mnem, opcode, format, cond, src, dst, off):
         # nb. src and dst are swapped here - not really though
@@ -257,6 +264,10 @@ class Emitter(Transformer):
     def testbit(self, op, cond, reg, imm):
         self.inc_pc()
         return Testbit("testbit", 0x05, Cond(cond), reg, imm)
+
+    def sub(self, op, cond, reg, sub_value):
+        self.inc_pc()
+        return Sub("sub", 0x06, Cond(cond), reg, sub_value)
 
     def base(self, op, base_addr):
         new_pc = int(str(base_addr), base = 0)

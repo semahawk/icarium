@@ -7,29 +7,23 @@
 .include uart
 
 start:
-    // set r10 to RAM base (0x800080000000)
-    set   r10, 0x80008000 shl 16
-    load  r11, r10 off 0x00
-    load  r12, r10 off 0x08
-    load  r13, r10 off 0x10
-
-    store r10, r10 off 0x00
-    store r10, r10 off 0x08
-    store r10, r10 off 0x10
-
-    load  r14, r10 off 0x00
-    load  r15, r10 off 0x08
-    load  r16, r10 off 0x10
-
-    set r1, 0x00008010 shl 16
+    set r1, 0x80100000 shl 16
     set r2, 0x73
+    // we'll send only this many characters
+    set r4, 3
+
 check_if_ready_to_send:
     load r3, r1 off #UART_STAT
     testbit r3, #UART_STAT_TXD_BUSY
     jump.nz #check_if_ready_to_send
 send_char:
     store r2, r1 off #UART_DATA
-    load r3, r1
+
+    // decrease the counter and exit if already at zero
+    sub r4, 1
+    jump.z #exit
+
+    // if not at zero - continue
     jump #check_if_ready_to_send
 exit:
     halt

@@ -186,6 +186,27 @@ jump.nz .always_jump
 
 Will always perform the jump.
 
+### sub (immediate value)
+
+Format: RIS
+
+Opcode: `7'h6`
+
+```
+sub <reg>, <imm>
+```
+
+This instruction will effectively perform `reg = reg - imm`. The result can underflow, for example:
+
+```
+set r1, 0
+sub r1, 1
+```
+
+will result in `r1` having the value `0xffffffffffffffff`. Unfortunately, there's no way yet to find if an underflow occurred.
+
+Side effects: `CPU_STAT_Z` will be set if `<reg> - <imm> == 64'h0`. In other case, `CPU_STAT_Z` will be cleared.
+
 ### jump (immediate address)
 
 ```

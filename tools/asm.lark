@@ -5,6 +5,7 @@ instr: /nop/         ["." cond] -> nop
      | /load/        ["." cond] reg "," reg ["off" imm] -> load
      | /store/       ["." cond] reg "," reg ["off" imm] -> store
      | /testbit/     ["." cond] reg "," imm -> testbit
+     | /sub/         ["." cond] reg "," imm -> sub
      | /halt/        ["." cond] -> halt
      | /\.base/ imm -> base
      | /\.define/ NAME imm -> define
