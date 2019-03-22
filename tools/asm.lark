@@ -12,11 +12,13 @@ instr: /nop/         ["." cond] -> nop
      | /\.base/ imm -> base
      | /\.define/ NAME imm -> define
      | /\.include/ NAME -> include
+     | /\.alias/ NAME reg -> alias
      | /([a-zA-Z_][a-zA-Z0-9_]+):/ -> label
 
 !cond: /(z|nz)/ -> cond
 
 !reg: /r[0-9]+/ -> reg
+    | NAME -> reg
     | "pc" -> reg
 
 !sep: /[\\n;]/

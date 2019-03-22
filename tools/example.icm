@@ -6,27 +6,33 @@
 
 .include uart
 
+.alias uart_base r1
+.alias byte_to_send r2
+.alias uart_stat r3
+.alias count r4
+.alias babe r6
+
 start:
-    set r1, 0x80100000 shl 16
-    set r2, 0x73
+    set uart_base, 0x80100000 shl 16
+    set byte_to_send, 0x73
     // we'll send only this many characters
-    set r4, 3
+    set count, 3
     set r5, 1
-    set r6, 0xbabe0000
+    set babe, 0xbabe0000
 
 check_if_ready_to_send:
-    load r3, r1 off #UART_STAT
-    testbit r3, #UART_STAT_TXD_BUSY
+    load uart_stat, uart_base off #UART_STAT
+    testbit uart_stat, #UART_STAT_TXD_BUSY
     jump.nz #check_if_ready_to_send
 send_char:
-    store r2, r1 off #UART_DATA
+    store byte_to_send, uart_base off #UART_DATA
 
     // just for fun
     shiftl r5, 1
-    or r6, r5
+    or babe, r5
 
     // decrease the counter and exit if already at zero
-    sub r4, 1
+    sub count, 1
     jump.z #exit
 
     // if not at zero - continue

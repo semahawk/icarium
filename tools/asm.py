@@ -213,7 +213,7 @@ class Store(Instr):
 
     def __str__(self):
         if self.format == Format.RIS:
-            return "{}{} 0x{:x}, r{} {}".format(self.mnem, self.cond, self.imm, self.dst_reg, self.imm, self.off)
+            return "{}{} 0x{:x}, r{} {}".format(self.mnem, self.cond, self.dst_reg, self.imm, self.off)
         elif self.format == Format.RRO:
             return "{}{} r{}, r{} {}".format(self.mnem, self.cond, self.src_reg, self.dst_reg, self.off)
 
@@ -221,6 +221,7 @@ class Env():
     def __init__(self):
         self.labels = {}
         self.defines = {}
+        self.aliases = {}
 
     def new_label(self, name, address):
         # TODO: check for conflicts/overwriting
@@ -241,6 +242,23 @@ class Env():
             return self.defines[name]
         else:
             return None
+
+    def new_alias(self, alias_name, reg):
+        # TODO: check for conflicts/overwriting
+        self.aliases[alias_name] = reg
+
+    def get_alias(self, alias_name):
+        if alias_name in self.aliases.keys():
+            return self.aliases[alias_name]
+        else:
+            return None
+
+    def get_alias_rev(self, reg):
+        for alias_name, r in self.aliases.items():
+            if reg == r:
+                return alias_name
+
+        return None
 
 @v_args(inline = True)
 class Emitter(Transformer):
@@ -303,11 +321,28 @@ class Emitter(Transformer):
     def label(self, label):
         return Instr(0, 0, 0, emit = False)
 
+    def alias(self, op, alias_name, reg):
+        print("# [emit] aliasing register {} to name {}".format(reg, alias_name))
+        self.env.new_alias(alias_name, reg)
+        return Instr(0, 0, 0, emit = False)
+
     def reg(self, reg):
         if reg == "pc":
             reg_id = 31
         else:
-            reg_id = int(str(reg)[1:])
+            if self.env.get_alias(reg) != None:
+                reg_id = self.env.get_alias(reg)
+                print("# [emit] found register alias {}, aliasing r{}".format(reg, reg_id))
+            elif reg[0] == "r":
+                reg_id = int(str(reg)[1:])
+                alias = self.env.get_alias_rev(reg_id)
+
+                if alias != None:
+                    print("Warning: you're using register {} directly".format(reg))
+                    print("Warning: but it's already aliased with name {}".format(alias))
+                    print("Warning: you probably didn't intend to do this!")
+            else:
+                raise Exception("unknown register {}!".format(reg))
 
         return reg_id
 
@@ -377,6 +412,9 @@ class Prerun(Transformer):
         label_name = name[:-1]
         print("# [prerun] new label {} at 0x{:x}".format(label_name, self.current_pc))
         self.env.new_label(label_name, self.current_pc)
+
+    def alias(self, op, alias_name, reg):
+        pass
 
     def imm(self, imm):
         return int(str(imm), base = 0)
