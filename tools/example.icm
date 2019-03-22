@@ -12,6 +12,7 @@ start:
     // we'll send only this many characters
     set r4, 3
     set r5, 1
+    set r6, 0xbabe0000
 
 check_if_ready_to_send:
     load r3, r1 off #UART_STAT
@@ -22,6 +23,7 @@ send_char:
 
     // just for fun
     shiftl r5, 1
+    or r6, r5
 
     // decrease the counter and exit if already at zero
     sub r4, 1

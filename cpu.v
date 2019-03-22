@@ -40,6 +40,7 @@
 `define OP_TESTBIT 7'h05
 `define OP_SUB     7'h06
 `define OP_SHIFTL  7'h07
+`define OP_OR      7'h08
 `define OP_HALT    7'h7f
 
 // those values should be encoded into the instruction
@@ -209,9 +210,10 @@ module cpu (
                         cpu_regs_write <= 1'b0;
                         fetch_dst_reg_clocks <= fetch_dst_reg_clocks - 1;
                     end else if (fetch_src_reg_clocks > 0) begin
+                        instr_dst_reg_val <= cpu_regs_out;
+
                         if (instr_format == `INSTR_FORMAT_RIS) begin
                             cpu_state <= `STATE_EXECUTE;
-                            instr_dst_reg_val <= cpu_regs_out;
                             fetch_dst_reg_clocks <= 2'd2;
                             fetch_src_reg_clocks <= 2'd2;
                         end else begin
@@ -266,6 +268,15 @@ module cpu (
                             cpu_regs_in <= instr_dst_reg_val << instr_ris_imm;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SHIFTL
+                        `OP_OR: begin
+                            $display("%g: or r%1d, r%1d",
+                                $time, instr_rro_dst, instr_rro_src);
+
+                            cpu_regs_write <= 1'b1;
+                            cpu_regs_id <= instr_rro_dst;
+                            cpu_regs_in <= instr_dst_reg_val | instr_src_reg_val;
+                            cpu_state <= `STATE_REG_WRITE;
+                        end // `OP_OR
                         `OP_LOAD: begin
                             $display("%g: load r%1d, r%1d off 0h%01x",
                                 $time, instr_rro_dst, instr_rro_src, instr_rro_off);
