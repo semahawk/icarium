@@ -128,10 +128,17 @@ module cpu (
         .reg_dat_o(cpu_regs_out)
     );
 
+    reg [63:0] cpu_ticks = 64'h0;
+
+    always @(posedge clk_i) begin
+        cpu_ticks <= cpu_ticks + 1;
+    end
+
     always @(posedge clk_i) begin
         if (rst_i) begin
             cpu_state <= `STATE_INIT;
             cpu_regs_write <= 1'b0;
+            cpu_ticks <= 64'h0;
             cpu_regs_id <= `REG_PC;
             fetch_dst_reg_clocks = 2'd2;
             fetch_src_reg_clocks = 2'd2;
