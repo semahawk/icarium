@@ -10,6 +10,7 @@ instr: /nop/         ["." cond] -> nop
      | /sub/         ["." cond] reg "," imm -> sub
      | /add/         ["." cond] reg "," imm -> add
      | /shiftl/      ["." cond] reg "," imm -> shiftl
+     | /shiftr/      ["." cond] reg "," imm -> shiftr
      | /or/          ["." cond] reg "," reg -> or_
      | /and/         ["." cond] reg "," reg -> and_
      | /xor/         ["." cond] reg "," reg -> xor

@@ -279,6 +279,18 @@ shiftl <reg>, <imm>
 
 Will effectively perform `reg = reg << imm`. No side effects.
 
+### shiftr (immediate value)
+
+Format: RIS
+
+Opcode: `7'hc`
+
+```
+shiftr <reg>, <imm>
+```
+
+Will effectively perform `reg = reg >> imm`. No side effects (at the moment).
+
 ### jump (immediate address)
 
 ```

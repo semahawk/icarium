@@ -214,6 +214,13 @@ class Shiftl(Instr):
     def __str__(self):
         return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
 
+class Shiftr(Instr):
+    def __init__(self, mnem, opcode, cond, reg, shift):
+        super().__init__(mnem, opcode, Format.RIS, cond, dst_reg = reg, imm = shift)
+
+    def __str__(self):
+        return "{}{} r{}, {}".format(self.mnem, self.cond, self.dst_reg, self.imm)
+
 class Or(Instr):
     def __init__(self, mnem, opcode, cond, dst_reg, src_reg):
         super().__init__(mnem, opcode, Format.RRO, cond, dst_reg = dst_reg, src_reg = src_reg)
@@ -345,6 +352,10 @@ class Emitter(Transformer):
     def shiftl(self, op, cond, reg, shift):
         self.inc_pc()
         return Shiftl("shiftl", 0x07, Cond(cond), reg, shift)
+
+    def shiftr(self, op, cond, reg, shift):
+        self.inc_pc()
+        return Shiftr("shiftr", 0x0c, Cond(cond), reg, shift)
 
     def or_(self, op, cond, dst_reg, src_reg):
         self.inc_pc()

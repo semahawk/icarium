@@ -44,6 +44,7 @@
 `define OP_AND     7'h09
 `define OP_XOR     7'h0a
 `define OP_ADD     7'h0b
+`define OP_SHIFTR  7'h0c
 `define OP_HALT    7'h7f
 
 // those values should be encoded into the instruction
@@ -298,6 +299,15 @@ module cpu (
                             cpu_regs_in <= instr_dst_reg_val << instr_ris_imm;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SHIFTL
+                        `OP_SHIFTR: begin
+                            // $display("%g: shiftr r%1d, 0h%01x",
+                                // $time, instr_ris_reg, instr_ris_imm);
+
+                            cpu_regs_write <= 1'b1;
+                            cpu_regs_id <= instr_ris_reg;
+                            cpu_regs_in <= instr_dst_reg_val >> instr_ris_imm;
+                            cpu_state <= `STATE_REG_WRITE;
+                        end // `OP_SHIFTR
                         `OP_OR: begin
                             // $display("%g: or r%1d, r%1d",
                                 // $time, instr_rro_dst, instr_rro_src);
