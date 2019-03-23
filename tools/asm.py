@@ -2,6 +2,7 @@
 
 import sys
 import argparse
+import struct
 from lark import Lark, Transformer, Visitor, Tree, Token, v_args
 from lark.visitors import Transformer_InPlace, Interpreter, visit_children_decor
 
@@ -10,16 +11,14 @@ prog_argp.add_argument('input',
     nargs='?', metavar='input', type=argparse.FileType('r'),
     default=sys.stdin,
     help='the input text file (stdin by default)')
-prog_argp.add_argument('output',
-    nargs='?', metavar='output', type=argparse.FileType('w'),
-    default=sys.stdout,
-    help='the output file (stdout by default)')
-prog_argp.add_argument('--hex', const='hex', dest='output_type', action='store_const',
-    help='output in ASCII hexadecimal numbers (default)')
-prog_argp.add_argument('--bin', const='bin', dest='output_type', action='store_const',
-    help='output in ASCII binary numbers')
-prog_argp.add_argument('--rom', const='rom', dest='output_type', action='store_const',
-    help='output suitable to plug into rom.v')
+prog_argp.add_argument('--hex', type = argparse.FileType('w'),
+    help = "output file (ASCII hexadecimal numbers)")
+prog_argp.add_argument('--bin', type = argparse.FileType('w'),
+    help = "output file (ASCII binary numbers)")
+prog_argp.add_argument('--rom', type = argparse.FileType('w'),
+    help = "output file (output suitable for rom.v)")
+prog_argp.add_argument('--raw', type = argparse.FileType('wb', 0),
+    help = "output file (raw binary data)")
 
 prog_args = prog_argp.parse_args()
 
@@ -396,21 +395,6 @@ class Emitter(Transformer):
         return cond
 
     def start(self, *instr):
-        rom_addr = 0x0
-
-        for instr in instr:
-            if isinstance(instr, Instr) and instr.emittable():
-                if prog_args.output_type == 'hex' or prog_args.output_type == None:
-                    print("{:016x}".format(instr.emit()), file = prog_args.output)
-                elif prog_args.output_type == 'bin':
-                    print("{:064b}".format(instr.emit()), file = prog_args.output)
-                elif prog_args.output_type == 'rom':
-                    print("16'h{:04x}: r_dat_o = 64'h{:016x}; // {}".format(rom_addr, instr.emit(), instr),
-                        file = prog_args.output)
-                    rom_addr += 8
-                else:
-                    raise Exception("unknown output type: {}".format(prog_args.output_type))
-
         return instr
 
 @v_args(inline = True)
@@ -502,4 +486,24 @@ print()
 print("Emitting the instructions:")
 print()
 
-Emitter(env).transform(tree)
+instr = Emitter(env).transform(tree)
+
+rom_addr = 0x0
+
+for instr in instr:
+    if isinstance(instr, Instr) and instr.emittable():
+        emited = instr.emit()
+
+        if prog_args.hex != None:
+            print("{:016x}".format(emited), file = prog_args.hex)
+
+        if prog_args.bin != None:
+            print("{:064b}".format(emited), file = prog_args.bin)
+
+        if prog_args.rom != None:
+            print("16'h{:04x}: r_dat_o = 64'h{:016x}; // {}".format(rom_addr, emited, instr),
+                file = prog_args.rom)
+            rom_addr += 8
+
+        if prog_args.raw != None:
+            prog_args.raw.write(struct.pack('>Q', emited))
