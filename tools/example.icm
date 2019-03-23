@@ -38,5 +38,12 @@ send_char:
 
     // if not at zero - continue
     jump #check_if_ready_to_send
-exit:
+
+real_exit:
     halt
+
+exit:
+    // jump to #real_exit via a register
+    load r10, pc off 8
+    .emit #real_exit
+    jump r10

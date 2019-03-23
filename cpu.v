@@ -146,7 +146,7 @@ module cpu (
             case (cpu_state)
                 `STATE_HALT: begin
                     // TODO add some logic to get out of here
-                    $display("%g: CPU halted...", $time);
+                    // $display("%g: CPU halted...", $time);
                 end // `STATE_HALT
                 `STATE_INIT: begin
                     // let the PC clock in from cpu_regs
@@ -155,7 +155,7 @@ module cpu (
                 // issue a read bus cycle, to the address
                 // which is currently stored in the `pc` register
                 `STATE_FETCH: begin
-                    $monitor("%g: fetching instruction at pc:%x", $time, cpu_regs_out);
+                    // $monitor("%g: fetching instruction at pc:%x", $time, cpu_regs_out);
 
                     if (instr_fetch_clocks > 0) begin
                         cpu_regs_write <= 1'b0;
@@ -181,7 +181,7 @@ module cpu (
                     cpu_regs_write <= 1'b0;
 
                     if (cpu_ack_i) begin
-                        $display("%g: read instruction %x", $time, cpu_dat_i);
+                        // $display("%g: read instruction %x", $time, cpu_dat_i);
                         // $display("%g: -- condition: 4'b%b", $time, cpu_dat_i[54:51]);
 
                         if (cpu_dat_i[54:51] == 4'b0001 /* .z */ && cpu_stat_z == 1'b0) begin
@@ -240,20 +240,20 @@ module cpu (
                 `STATE_EXECUTE: begin
                     case (instr_opcode)
                         `OP_NOP: begin
-                            $display("%g: nop", $time);
+                            // $display("%g: nop", $time);
 
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SET
                         `OP_SET: begin
                             if (instr_format == `INSTR_FORMAT_RIS) begin
-                                $display("%g: set r%1d, 0h%01x shl 0h%1x",
-                                    $time, instr_ris_reg, instr_ris_imm, instr_ris_shl);
+                                // $display("%g: set r%1d, 0h%01x shl 0h%1x",
+                                    // $time, instr_ris_reg, instr_ris_imm, instr_ris_shl);
 
                                 cpu_regs_id <= instr_ris_reg;
                                 cpu_regs_in <= instr_ris_imm << instr_ris_shl;
                             end else if (instr_format == `INSTR_FORMAT_RRO) begin
-                                $display("%g: set r%1d, r%1d",
-                                    $time, instr_rro_dst, instr_rro_src);
+                                // $display("%g: set r%1d, r%1d",
+                                    // $time, instr_rro_dst, instr_rro_src);
 
                                 cpu_regs_id <= instr_rro_dst;
                                 cpu_regs_in <= instr_src_reg_val;
@@ -263,8 +263,8 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SET
                         `OP_SUB: begin
-                            $display("%g: sub r%1d, 0h%01x",
-                                $time, instr_ris_reg, instr_ris_imm);
+                            // $display("%g: sub r%1d, 0h%01x",
+                                // $time, instr_ris_reg, instr_ris_imm);
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= instr_ris_reg;
@@ -278,8 +278,8 @@ module cpu (
                             end
                         end // `OP_SUB
                         `OP_SHIFTL: begin
-                            $display("%g: shiftl r%1d, 0h%01x",
-                                $time, instr_ris_reg, instr_ris_imm);
+                            // $display("%g: shiftl r%1d, 0h%01x",
+                                // $time, instr_ris_reg, instr_ris_imm);
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= instr_ris_reg;
@@ -287,8 +287,8 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SHIFTL
                         `OP_OR: begin
-                            $display("%g: or r%1d, r%1d",
-                                $time, instr_rro_dst, instr_rro_src);
+                            // $display("%g: or r%1d, r%1d",
+                                // $time, instr_rro_dst, instr_rro_src);
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= instr_rro_dst;
@@ -296,8 +296,8 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_OR
                         `OP_AND: begin
-                            $display("%g: and r%1d, r%1d",
-                                $time, instr_rro_dst, instr_rro_src);
+                            // $display("%g: and r%1d, r%1d",
+                                // $time, instr_rro_dst, instr_rro_src);
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= instr_rro_dst;
@@ -305,8 +305,8 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_AND
                         `OP_XOR: begin
-                            $display("%g: xor r%1d, r%1d",
-                                $time, instr_rro_dst, instr_rro_src);
+                            // $display("%g: xor r%1d, r%1d",
+                                // $time, instr_rro_dst, instr_rro_src);
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= instr_rro_dst;
@@ -314,8 +314,9 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_XOR
                         `OP_LOAD: begin
-                            $display("%g: load r%1d, r%1d off 0h%01x",
-                                $time, instr_rro_dst, instr_rro_src, instr_rro_off);
+                            $display("%g: load r%1d, r%1d (h'%x) off 0h%01x",
+                                $time, instr_rro_dst, instr_rro_src,
+                                instr_src_reg_val + instr_rro_off, instr_rro_off);
 
                             cpu_stb_o <= 1'b1;
                             cpu_cyc_o <= 1'b1;
@@ -333,8 +334,8 @@ module cpu (
                             end
                         end // `OP_LOAD
                         `OP_STORE: begin
-                            $display("%g: store r%1d, r%1d off 0h%01x",
-                                $time, instr_rro_src, instr_rro_dst, instr_rro_off);
+                            // $display("%g: store r%1d, r%1d off 0h%01x",
+                                // $time, instr_rro_src, instr_rro_dst, instr_rro_off);
 
                             cpu_stb_o <= 1'b1;
                             cpu_cyc_o <= 1'b1;
@@ -357,7 +358,7 @@ module cpu (
 
                                 cpu_regs_in <= instr_i_imm;
                             end else if (instr_format == `INSTR_FORMAT_RIS) begin
-                                $display("%g: jump r%1d", $time, instr_ris_reg);
+                                $display("%g: jump r%1d (h'%x)", $time, instr_ris_reg, instr_dst_reg_val);
 
                                 cpu_regs_in <= instr_dst_reg_val;
                             end
@@ -367,8 +368,8 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_JUMP
                         `OP_TESTBIT: begin
-                            $display("%g: testbit r%01d, %01d", $time,
-                                instr_ris_reg, instr_ris_imm);
+                            // $display("%g: testbit r%01d, %01d", $time,
+                                // instr_ris_reg, instr_ris_imm);
 
                             if (instr_dst_reg_val & (64'b1 << instr_ris_imm)) begin
                                 // $display("%g: -- bit %01d is set - clearing CPU_STAT_Z", $time, instr_ris_imm);
@@ -381,7 +382,7 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_TESTBIT
                         `OP_HALT: begin
-                            $display("%g: halt", $time);
+                            // $display("%g: halt", $time);
 
                             cpu_state <= `STATE_HALT;
                         end // `OP_HALT

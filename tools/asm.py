@@ -108,11 +108,13 @@ class Off():
         return self.off | other
 
 class Format():
-    RRO, RIS, I = range(3)
+    # BARE is not a real instruction format, it's just used for the .emit
+    # directive
+    RRO, RIS, I, BARE = range(4)
 
 class Instr(object):
     def __init__(self, mnem, opcode, format, cond = 0, emit = True,
-                 imm = 0, dst_reg = 0, src_reg = 0, shl = 0, off = 0):
+                 imm = 0, dst_reg = 0, src_reg = 0, shl = 0, off = 0, bare = 0):
         self.mnem = mnem
         self.opcode = opcode
         self.format = format
@@ -123,6 +125,7 @@ class Instr(object):
         self.imm = imm
         self.shl = shl
         self.off = off
+        self.bare = bare
 
     def emittable(self):
         return self.e is True
@@ -147,12 +150,16 @@ class Instr(object):
                    self.dst_reg << 46 | \
                    self.imm     << 5  | \
                    self.shl
+        elif self.format == Format.BARE:
+            return self.bare
 
     def __str__(self):
         if self.format == Format.RIS:
             return "{}{} r{}, 0x{:x} {}".format(self.mnem, self.cond, self.dst_reg, self.imm, self.shl)
         elif self.format == Format.RRO:
             return "{}{} r{}, r{} {}".format(self.mnem, self.cond, self.dst_reg, self.src_reg, self.off)
+        elif self.format == Format.BARE:
+            return "{}".format(self.mnem)
 
 class Nop(Instr):
     def __init__(self, mnem, opcode, cond):
@@ -363,6 +370,10 @@ class Emitter(Transformer):
         print("# [emit] aliasing register {} to name {}".format(reg, alias_name))
         self.env.new_alias(alias_name, reg)
         return Instr(0, 0, 0, emit = False)
+
+    def emit(self, op, imm):
+        print("# emitting bare immediate {}".format(imm))
+        return Instr(".emit", 0, Format.BARE, Cond(), bare = imm)
 
     def reg(self, reg):
         if reg == "pc":
