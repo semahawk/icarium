@@ -8,6 +8,7 @@ instr: /nop/         ["." cond] -> nop
      | /store/       ["." cond] reg "," reg ["off" imm] -> store
      | /testbit/     ["." cond] reg "," imm -> testbit
      | /sub/         ["." cond] reg "," imm -> sub
+     | /add/         ["." cond] reg "," imm -> add
      | /shiftl/      ["." cond] reg "," imm -> shiftl
      | /or/          ["." cond] reg "," reg -> or_
      | /and/         ["." cond] reg "," reg -> and_

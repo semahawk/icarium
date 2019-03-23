@@ -338,6 +338,10 @@ class Emitter(Transformer):
         self.inc_pc()
         return Sub("sub", 0x06, Cond(cond), reg, sub_value)
 
+    def add(self, op, cond, reg, add_value):
+        self.inc_pc()
+        return Instr("add", 0x0b, Format.RIS, Cond(cond), dst_reg = reg, imm = add_value)
+
     def shiftl(self, op, cond, reg, shift):
         self.inc_pc()
         return Shiftl("shiftl", 0x07, Cond(cond), reg, shift)

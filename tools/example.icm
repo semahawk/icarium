@@ -11,6 +11,7 @@
 .alias uart_stat r3
 .alias count r4
 .alias babe r6
+.alias add_test r7
 
 start:
     set uart_base, 0x80100000 shl 16
@@ -31,6 +32,7 @@ send_char:
     shiftl r5, 1
     or babe, r5
     and babe, babe
+    add add_test, 1
 
     // decrease the counter and exit if already at zero
     sub count, 1
@@ -44,6 +46,8 @@ real_exit:
 
 exit:
     // jump to #real_exit via a register
-    load r10, pc off 8
+    // pc points to the next instruction to execute
+    // so there's no need to offset by 8 here
+    load r10, pc
     .emit #real_exit
     jump r10

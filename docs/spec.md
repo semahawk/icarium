@@ -219,6 +219,18 @@ will result in `r1` having the value `0xffffffffffffffff`. Unfortunately, there'
 
 Side effects: `CPU_STAT_Z` will be set if `<reg> - <imm> == 64'h0`. In other case, `CPU_STAT_Z` will be cleared.
 
+### add (immediate value)
+
+Format: RIS
+
+Opcode: `7'h`b
+
+```
+add <reg>, <imm>
+```
+
+This instruction will effectively perform `reg = reg + imm`. The result can overflow.
+
 ### or (register, register)
 
 Format: RRO

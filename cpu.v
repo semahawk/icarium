@@ -43,6 +43,7 @@
 `define OP_OR      7'h08
 `define OP_AND     7'h09
 `define OP_XOR     7'h0a
+`define OP_ADD     7'h0b
 `define OP_HALT    7'h7f
 
 // those values should be encoded into the instruction
@@ -277,6 +278,17 @@ module cpu (
                                 cpu_stat_z <= 1'b0;
                             end
                         end // `OP_SUB
+                        `OP_ADD: begin
+                            // $display("%g: add r%1d, 0h%01x",
+                                // $time, instr_ris_reg, instr_ris_imm);
+
+                            cpu_regs_write <= 1'b1;
+                            cpu_regs_id <= instr_ris_reg;
+                            cpu_regs_in <= instr_dst_reg_val + instr_ris_imm;
+                            cpu_state <= `STATE_REG_WRITE;
+
+                            // TODO: check for overflow etc. and set flags
+                        end // `OP_ADD
                         `OP_SHIFTL: begin
                             // $display("%g: shiftl r%1d, 0h%01x",
                                 // $time, instr_ris_reg, instr_ris_imm);
