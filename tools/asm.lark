@@ -8,6 +8,7 @@ instr: /nop/         ["." cond] -> nop
      | /sub/         ["." cond] reg "," imm -> sub
      | /shiftl/      ["." cond] reg "," imm -> shiftl
      | /or/          ["." cond] reg "," reg -> or_
+     | /xor/         ["." cond] reg "," reg -> xor
      | /halt/        ["." cond] -> halt
      | /\.base/ imm -> base
      | /\.define/ NAME imm -> define

@@ -231,6 +231,18 @@ and <dest reg>, <source reg>
 
 This instruction will essentially perform `dest reg = dest reg & source reg`.
 
+### xor (register, register)
+
+Format: RRO
+
+Opcode: `7'ha`
+
+```
+xor <dest reg>, <source reg>
+```
+
+This instruction will essentially perform `dest reg = dest reg ^ source reg`.
+
 ### shiftl (immediate value)
 
 Format: RIS
