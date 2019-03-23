@@ -39,5 +39,4 @@ send_char:
     // if not at zero - continue
     jump #check_if_ready_to_send
 exit:
-    set r10, babe
     halt

@@ -352,11 +352,18 @@ module cpu (
                             end
                         end // `OP_LOAD
                         `OP_JUMP: begin
-                            $display("%g: jump 0h%01x", $time, instr_i_imm);
+                            if (instr_format == `INSTR_FORMAT_I) begin
+                                $display("%g: jump 0h%01x", $time, instr_i_imm);
+
+                                cpu_regs_in <= instr_i_imm;
+                            end else if (instr_format == `INSTR_FORMAT_RIS) begin
+                                $display("%g: jump r%1d", $time, instr_ris_reg);
+
+                                cpu_regs_in <= instr_dst_reg_val;
+                            end
 
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= `REG_PC;
-                            cpu_regs_in <= instr_i_imm;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_JUMP
                         `OP_TESTBIT: begin

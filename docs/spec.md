@@ -275,6 +275,14 @@ jump <imm>
 
 This instruction will set register `pc` to the specified `<imm>` value.
 
+### jump (using a register)
+
+```
+jump <reg>
+```
+
+This instruction will set register `pc` to the value taken from register `<reg>`.
+
 ### halt
 
 Format: I

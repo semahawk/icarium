@@ -169,11 +169,14 @@ class Halt(Instr):
         return "halt{}".format(self.cond)
 
 class Jump(Instr):
-    def __init__(self, mnem, opcode, format, cond, imm):
-        super().__init__(mnem, opcode, format, cond, imm = imm)
+    def __init__(self, mnem, opcode, format, cond, **kwargs):
+        super().__init__(mnem, opcode, format, cond, **kwargs)
 
     def __str__(self):
-        return "jump{} 0x{:x}".format(self.cond, self.imm)
+        if self.format == Format.I:
+            return "jump{} 0x{:x}".format(self.cond, self.imm)
+        elif self.format == Format.RIS:
+            return "jump{} r{}".format(self.cond, self.dst_reg)
 
 class Set(Instr):
     def __init__(self, mnem, opcode, format, cond, **kwargs):
@@ -296,9 +299,13 @@ class Emitter(Transformer):
         self.inc_pc()
         return Halt("halt", 0x7f, Cond(cond))
 
-    def jump(self, op, cond, imm):
+    def jump_i(self, op, cond, imm):
         self.inc_pc()
-        return Jump("jump", 0x04, Format.I, Cond(cond), imm)
+        return Jump("jump", 0x04, Format.I, Cond(cond), imm = imm)
+
+    def jump_ris(self, op, cond, reg):
+        self.inc_pc()
+        return Jump("jump", 0x04, Format.RIS, Cond(cond), dst_reg = reg)
 
     def set_ris(self, op, cond, dst, src, shl):
         self.inc_pc()

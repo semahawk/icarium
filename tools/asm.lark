@@ -1,6 +1,7 @@
 start: instr*
 instr: /nop/         ["." cond] -> nop
-     | /jump/        ["." cond] imm -> jump
+     | /jump/        ["." cond] imm -> jump_i
+     | /jump/        ["." cond] reg -> jump_ris
      | /set/         ["." cond] reg "," imm ["shl" imm] -> set_ris
      | /set/         ["." cond] reg "," reg -> set_rro
      | /load/        ["." cond] reg "," reg ["off" imm] -> load
