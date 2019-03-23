@@ -134,6 +134,18 @@ set r1, 0x80000000 shl 16
 
 Will set the register `r1` to the value `0x800000000000`
 
+### set (using a register)
+
+Format: RRO
+
+Opcode: `7'b0000001`
+
+```
+set r1, r2
+```
+
+Will set the register `r1` to the value stored in register `r2`
+
 ### load (using a register)
 
 Format: RRO

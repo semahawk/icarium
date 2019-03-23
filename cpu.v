@@ -245,12 +245,21 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SET
                         `OP_SET: begin
-                            $display("%g: set r%1d, 0h%01x shl 0h%1x",
-                                $time, instr_ris_reg, instr_ris_imm, instr_ris_shl);
+                            if (instr_format == `INSTR_FORMAT_RIS) begin
+                                $display("%g: set r%1d, 0h%01x shl 0h%1x",
+                                    $time, instr_ris_reg, instr_ris_imm, instr_ris_shl);
+
+                                cpu_regs_id <= instr_ris_reg;
+                                cpu_regs_in <= instr_ris_imm << instr_ris_shl;
+                            end else if (instr_format == `INSTR_FORMAT_RRO) begin
+                                $display("%g: set r%1d, r%1d",
+                                    $time, instr_rro_dst, instr_rro_src);
+
+                                cpu_regs_id <= instr_rro_dst;
+                                cpu_regs_in <= instr_src_reg_val;
+                            end
 
                             cpu_regs_write <= 1'b1;
-                            cpu_regs_id <= instr_ris_reg;
-                            cpu_regs_in <= instr_ris_imm << instr_ris_shl;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_SET
                         `OP_SUB: begin

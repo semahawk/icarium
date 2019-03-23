@@ -59,7 +59,10 @@ class Shl():
             self.shl = shl
 
     def __str__(self):
-        return "shl {}".format(self.shl)
+        if self.shl == 0x0:
+            return ""
+        else:
+            return "shl {}".format(self.shl)
 
     def __int__(self):
         return self.shl
@@ -84,7 +87,10 @@ class Off():
             self.off = off
 
     def __str__(self):
-        return "off {}".format(self.off)
+        if self.off == 0x0:
+            return ""
+        else:
+            return "off {}".format(self.off)
 
     def __int__(self):
         return self.off
@@ -170,8 +176,8 @@ class Jump(Instr):
         return "jump{} 0x{:x}".format(self.cond, self.imm)
 
 class Set(Instr):
-    def __init__(self, mnem, opcode, format, cond, dst, src, shl):
-        super().__init__(mnem, opcode, format, cond, dst_reg = dst, imm = src, src_reg = src, shl = shl)
+    def __init__(self, mnem, opcode, format, cond, **kwargs):
+        super().__init__(mnem, opcode, format, cond, **kwargs)
 
 class Load(Instr):
     def __init__(self, mnem, opcode, format, cond, dst, src, off):
@@ -294,9 +300,13 @@ class Emitter(Transformer):
         self.inc_pc()
         return Jump("jump", 0x04, Format.I, Cond(cond), imm)
 
-    def set(self, op, cond, dst, src, shl):
+    def set_ris(self, op, cond, dst, src, shl):
         self.inc_pc()
-        return Set("set", 0x01, Format.RIS, Cond(cond), dst, src, Shl(shl))
+        return Set("set", 0x01, Format.RIS, Cond(cond), dst_reg = dst, imm = src, shl = Shl(shl))
+
+    def set_rro(self, op, cond, dst_reg, src_reg):
+        self.inc_pc()
+        return Set("set", 0x01, Format.RRO, Cond(cond), dst_reg = dst_reg, src_reg = src_reg, off = Off(0x0))
 
     def load(self, op, cond, dst, src, off):
         self.inc_pc()
