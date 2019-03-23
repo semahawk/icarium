@@ -206,6 +206,13 @@ class Or(Instr):
     def __str__(self):
         return "{}{} r{}, r{}".format(self.mnem, self.cond, self.dst_reg, self.src_reg)
 
+class And(Instr):
+    def __init__(self, mnem, opcode, cond, dst_reg, src_reg):
+        super().__init__(mnem, opcode, Format.RRO, cond, dst_reg = dst_reg, src_reg = src_reg)
+
+    def __str__(self):
+        return "{}{} r{}, r{}".format(self.mnem, self.cond, self.dst_reg, self.src_reg)
+
 class Xor(Instr):
     def __init__(self, mnem, opcode, cond, dst_reg, src_reg):
         super().__init__(mnem, opcode, Format.RRO, cond, dst_reg = dst_reg, src_reg = src_reg)
@@ -315,6 +322,10 @@ class Emitter(Transformer):
     def or_(self, op, cond, dst_reg, src_reg):
         self.inc_pc()
         return Or("or", 0x08, Cond(cond), dst_reg, src_reg)
+
+    def and_(self, op, cond, dst_reg, src_reg):
+        self.inc_pc()
+        return And("and", 0x09, Cond(cond), dst_reg, src_reg)
 
     def xor(self, op, cond, dst_reg, src_reg):
         self.inc_pc()

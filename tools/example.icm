@@ -30,6 +30,7 @@ send_char:
     // just for fun
     shiftl r5, 1
     or babe, r5
+    and babe, babe
 
     // decrease the counter and exit if already at zero
     sub count, 1
