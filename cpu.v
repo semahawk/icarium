@@ -142,8 +142,8 @@ module cpu (
             cpu_regs_write <= 1'b0;
             cpu_ticks <= 64'h0;
             cpu_regs_id <= `REG_PC;
-            fetch_dst_reg_clocks = 2'd2;
-            fetch_src_reg_clocks = 2'd2;
+            fetch_dst_reg_clocks <= 2'd2;
+            fetch_src_reg_clocks <= 2'd2;
         end else begin
             case (cpu_state)
                 `STATE_HALT: begin
