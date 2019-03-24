@@ -67,20 +67,22 @@ module uart (
     // internal state of the Wishbone slave
     reg [1:0] uart_state = `STATE_IDLE;
 
-    // this is the divided clock which the receiver and transmitter use
-    reg uart_baud_clk = 1'd0;
-    // increments on every clk_i, resets down to zero after every 9600 clocks
-    reg [31:0] uart_baud_counter = 32'd0;
 
     //
     // receiver
     //
     // internal state of the receiver
     reg [4:0] uart_rx_state = `STATE_RX_IDLE;
-    // this is the sampling clock of the receiver (16x the baudrate)
+    // this is the sampling clock of the receiver (32x the baudrate)
+    // this is only used to detect the start bit
     reg uart_rx_sample_clk = 1'd0;
-    // this is the clock which is used for sampling at 16x the baudrate
+    // this is the clock which is used for sampling at 32x the baudrate
     reg [31:0] uart_rx_sample_counter = 32'd0;
+    // this is the divided clock which the receiver uses to probe the characters with
+    reg uart_rx_baud_clk = 1'd0;
+    // increments on every clk_i, resets down to zero after every 115200 clocks
+    reg [31:0] uart_rx_baud_counter = 32'd0;
+    reg uart_rx_baud_is_running = 1'd0;
     // the receiver will store the data which it read right here
     reg [7:0] uart_rx_buf = 8'h0;
     // control signal to the receiver to start clocking in the data in uart_rx
@@ -96,6 +98,10 @@ module uart (
     //
     // internal state of the transmitter
     reg [4:0] uart_tx_state = `STATE_TX_IDLE;
+    // this is the divided clock which the transmitter uses to send characters with
+    reg uart_tx_baud_clk = 1'd0;
+    // increments on every clk_i, resets down to zero after every 115200 clocks
+    reg [31:0] uart_tx_baud_counter = 32'd0;
     // the data-to-be-sent will be latched into this shift-register
     reg [7:0] uart_tx_buf = 8'h0;
     // index of the next bit to be sent
@@ -122,31 +128,63 @@ module uart (
     // just some debug output
     assign uart_out = r_uart_out;
 
+    reg uart_rx_start_last;
+    always @(posedge clk_i)
+        uart_rx_start_last <= uart_rx_start;
+
     // baud-clock generation logic
     always @(posedge clk_i) begin
         if (rst_i) begin
             uart_rx_sample_clk <= 1'h0;
             uart_rx_sample_counter <= 32'h0;
-            uart_baud_clk <= 1'h0;
-            uart_baud_counter <= 32'h0;
+            uart_rx_baud_clk <= 1'h0;
+            uart_rx_baud_counter <= 32'h0;
+            uart_rx_baud_is_running <= 1'd0;
+            uart_tx_baud_clk <= 1'h0;
+            uart_tx_baud_counter <= 32'h0;
         end else begin
             // 100MHz reference input clock / 115200 baudrate = 868
             // but the clock needs to toggle twice as fast
-            // and we want to sample 16x
-            if (uart_rx_sample_counter < (868 / 16 / 2) - 1) begin
+            // and we want to sample 32x
+            if (uart_rx_sample_counter < (868 / 32 / 2) - 1) begin
                 uart_rx_sample_counter <= uart_rx_sample_counter + 1;
             end else begin
                 uart_rx_sample_counter <= 32'h0;
                 uart_rx_sample_clk <= ~uart_rx_sample_clk;
             end
 
+            // reset the receiver's baud clock every time we detect a start condition
+            // this is to make sure that we sample each bit of every character
+            // at known offsets (that we sample it in the middle of the bit)
+            if (uart_rx_start_last == 1'b0 && uart_rx_start == 1'b1) begin
+                // offset the clock so that the edge rises in the middle of
+                // the received character
+                // this is due to the fact that there is a small delay between
+                // the time when start bit is transmitted by the other end,
+                // and when it's detected by this receiver
+                uart_rx_baud_counter <= 32'd64;
+                uart_rx_baud_clk <= 1'd0;
+                uart_rx_baud_is_running <= 1'd1;
+            end else begin
+                // TODO this clock is running even if it doesn't need to
+                // eg. even if there was no start condition yet
+                // it probably doesn't hurt, but it unnecessarily triggers the 'always'
+                // block of the receiver
+                if (uart_rx_baud_counter < (868 / 2) - 1) begin
+                    uart_rx_baud_counter <= uart_rx_baud_counter + 1;
+                end else begin
+                    uart_rx_baud_counter <= 32'h0;
+                    uart_rx_baud_clk <= ~uart_rx_baud_clk;
+                end
+            end
+
             // 100MHz reference input clock / 115200 baudrate = 868
             // but the clock needs to toggle twice as fast
-            if (uart_baud_counter < (868 / 2) - 1) begin
-                uart_baud_counter <= uart_baud_counter + 1;
+            if (uart_tx_baud_counter < (868 / 2) - 1) begin
+                uart_tx_baud_counter <= uart_tx_baud_counter + 1;
             end else begin
-                uart_baud_counter <= 32'h0;
-                uart_baud_clk <= ~uart_baud_clk;
+                uart_tx_baud_counter <= 32'h0;
+                uart_tx_baud_clk <= ~uart_tx_baud_clk;
             end
         end
     end
@@ -252,7 +290,7 @@ module uart (
     end
 
     // the receive block
-    always @(posedge uart_baud_clk) begin
+    always @(posedge uart_rx_baud_clk) begin
         case (uart_rx_state)
             `STATE_RX_IDLE: begin
                 if (uart_rx_start) begin
@@ -283,7 +321,7 @@ module uart (
     end
 
     // the transmit block
-    always @(posedge uart_baud_clk) begin
+    always @(posedge uart_tx_baud_clk) begin
         case (uart_tx_state)
             `STATE_TX_IDLE: begin
                 if (tx_wait_clocks > 0) begin

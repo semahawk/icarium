@@ -27,13 +27,13 @@ module uart_tb;
 	// Inputs
 	reg rst_i;
 	reg clk_i;
-	reg uart_rx;
+	reg uart_rx_i;
 
 	// Instantiate the Unit Under Test (UUT)
 	uart uut (
 		.rst_i(rst_i),
 		.clk_i(clk_i),
-		.uart_rx(uart_rx)
+		.uart_rx_i(uart_rx_i)
 	);
 
 	always begin
@@ -45,68 +45,70 @@ module uart_tb;
 		rst_i = 0;
 		clk_i = 0;
 		// put the RX into idle
-		uart_rx = 1;
+		uart_rx_i = 1;
 
 		// Wait 100 ns for global reset to finish
 		#4340;
+		// #100;
 
 		// send an example byte of data to the receiver at 115200 baudrate
 		// send the start bit
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		// start sending data
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		// and the stop bit
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		// and the idle state
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 
-		#1000;
+		#4340;
+		// #100;
 
 		// send a second example byte
 		// send the start bit
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		// start sending data
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 0;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 0;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 0;
 		// and the stop bit
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 		// and the idle state
 		#8680;
-		uart_rx = 1;
+		uart_rx_i = 1;
 	end
 
 endmodule
