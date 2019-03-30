@@ -26,11 +26,12 @@
 
 `define STATE_HALT      0
 `define STATE_INIT      1
-`define STATE_FETCH     2
-`define STATE_DECODE    3
-`define STATE_REG_READ  4
-`define STATE_EXECUTE   5
-`define STATE_REG_WRITE 6
+`define STATE_INIT2     2
+`define STATE_FETCH     3
+`define STATE_DECODE    4
+`define STATE_REG_READ  5
+`define STATE_EXECUTE   6
+`define STATE_REG_WRITE 7
 
 `define OP_NOP     7'h00
 `define OP_SET     7'h01
@@ -62,22 +63,12 @@ module regs (
 );
 
     reg [`DAT_WIDTH-1:0] regs [0:`REG_PC];
-    integer i;
 
     always @(posedge clk_i) begin
-        if (rst_i) begin
-            // initialize all registers to 0x0
-            for (i = `REG_ZERO; i < `REG_PC; i = i + 1) begin
-                regs[i] <= {`DAT_WIDTH{1'b0}};
-            end
-            // except for pc, which gets to point to ROM
-            regs[`REG_PC] <= 64'h800000000000;
+        if (we_i) begin
+            regs[reg_id_i] <= reg_dat_i;
         end else begin
-            if (we_i) begin
-                regs[reg_id_i] <= reg_dat_i;
-            end else begin
-                reg_dat_o <= regs[reg_id_i];
-            end
+            reg_dat_o <= regs[reg_id_i];
         end
     end
 
@@ -133,15 +124,16 @@ module cpu (
     reg [63:0] cpu_ticks = 64'h0;
 
     always @(posedge clk_i) begin
-        cpu_ticks <= cpu_ticks + 1;
+        if (rst_i)
+            cpu_ticks <= 64'h0;
+        else
+            cpu_ticks <= cpu_ticks + 1;
     end
 
     always @(posedge clk_i) begin
         if (rst_i) begin
             cpu_state <= `STATE_INIT;
             cpu_regs_write <= 1'b0;
-            cpu_ticks <= 64'h0;
-            cpu_regs_id <= `REG_PC;
             fetch_dst_reg_clocks <= 2'd2;
             fetch_src_reg_clocks <= 2'd2;
         end else begin
@@ -150,10 +142,17 @@ module cpu (
                     // TODO add some logic to get out of here
                     // $display("%g: CPU halted...", $time);
                 end // `STATE_HALT
-                `STATE_INIT: begin
-                    // let the PC clock in from cpu_regs
-                    cpu_state <= `STATE_FETCH;
+                 `STATE_INIT: begin
+                    cpu_regs_write <= 1'd1;
+                    cpu_regs_id <= `REG_PC;
+                    cpu_regs_in <= 64'h800000000000;
+                    cpu_state <= `STATE_INIT2;
                 end // `STATE_INIT
+                `STATE_INIT2: begin
+                    // let the PC clock in
+                    cpu_regs_write <= 1'd0;
+                    cpu_state <= `STATE_FETCH;
+                end // `STATE_INIT2
                 // issue a read bus cycle, to the address
                 // which is currently stored in the `pc` register
                 `STATE_FETCH: begin
