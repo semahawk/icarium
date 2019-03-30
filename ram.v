@@ -53,11 +53,6 @@ module ram (
             state <= `STATE_IDLE;
             r_ack <= 1'h0;
             r_err <= 1'h0;
-
-            // initialize all memory to 0x0
-            for (i = 0; i < WORDS; i = i + 1) begin
-                memory[i] <= {`DAT_WIDTH{1'b0}};
-            end
         end else begin
             case (state)
                 `STATE_IDLE: begin
