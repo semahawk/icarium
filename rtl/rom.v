@@ -49,26 +49,20 @@ module rom (
 
     always @(*) begin
         casex (rom_adr_i)
-16'h0000: r_dat_o = 64'h0280401002000010; // set r1, 0x80100000 shl 16
-16'h0008: r_dat_o = 64'h0280800000000e60; // set r2, 0x73
-16'h0010: r_dat_o = 64'h0281000000000060; // set r4, 0x3
-16'h0018: r_dat_o = 64'h0281400000000020; // set r5, 0x1
-16'h0020: r_dat_o = 64'h0281801757c00000; // set r6, 0xbabe0000
-16'h0028: r_dat_o = 64'h0400c20000000000; // load r3, r1
-16'h0030: r_dat_o = 64'h0a80c00000000000; // testbit r3, 0
-16'h0038: r_dat_o = 64'h0948800000000028; // jump.nz 0x800000000028
-16'h0040: r_dat_o = 64'h0600440000000010; // store r2, r1 off 16
-16'h0048: r_dat_o = 64'h0e81400000000020; // shiftl r5, 1
-16'h0050: r_dat_o = 64'h10018a0000000000; // or r6, r5
-16'h0058: r_dat_o = 64'h12018c0000000000; // and r6, r6
-16'h0060: r_dat_o = 64'h1681c00000000020; // add r7, 0x1
-16'h0068: r_dat_o = 64'h0c81000000000020; // sub r4, 1
-16'h0070: r_dat_o = 64'h0908800000000088; // jump.z 0x800000000088
-16'h0078: r_dat_o = 64'h0900800000000028; // jump 0x800000000028
-16'h0080: r_dat_o = 64'hff00000000000000; // halt
-16'h0088: r_dat_o = 64'h0402be0000000000; // load r10, r31
-16'h0090: r_dat_o = 64'h0000800000000080; // .emit
-16'h0098: r_dat_o = 64'h0882800000000000; // jump r10
+16'h0000: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0008: r_dat_o = 64'h0286c01002000010; // set r27, 0x80100000 shl 16
+16'h0010: r_dat_o = 64'h02804000000002a0; // set r1, 0x15
+16'h0018: r_dat_o = 64'h1a07c00000000028; // call r31 off 40
+16'h0020: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0028: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0030: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0038: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0040: r_dat_o = 64'h00000000deadbabe; // .emit
+16'h0048: r_dat_o = 64'h0407360000000000; // load r28, r27
+16'h0050: r_dat_o = 64'h0a87000000000000; // testbit r28, 0
+16'h0058: r_dat_o = 64'h0948800000000048; // jump.nz 0x800000000048
+16'h0060: r_dat_o = 64'h0606c20000000010; // store r1, r27 off 16
+16'h0068: r_dat_o = 64'h1a07c1ffffffff98; // call r31 off -104
             default:  r_dat_o = 64'hfe00000000000000; // halt by default
         endcase
     end

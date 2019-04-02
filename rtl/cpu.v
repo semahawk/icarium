@@ -46,6 +46,7 @@
 `define OP_XOR     7'h0a
 `define OP_ADD     7'h0b
 `define OP_SHIFTR  7'h0c
+`define OP_CALL    7'h0d
 `define OP_HALT    7'h7f
 
 // those values should be encoded into the instruction
@@ -335,9 +336,9 @@ module cpu (
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_XOR
                         `OP_LOAD: begin
-                            $display("%g: load r%1d, r%1d (h'%x) off 0h%01x",
-                                $time, instr_rro_dst, instr_rro_src,
-                                instr_src_reg_val + instr_rro_off, instr_rro_off);
+                            // $display("%g: load r%1d, r%1d (h'%x) off 0h%01x",
+                                // $time, instr_rro_dst, instr_rro_src,
+                                // instr_src_reg_val + instr_rro_off, instr_rro_off);
 
                             cpu_stb_o <= 1'b1;
                             cpu_cyc_o <= 1'b1;
@@ -375,11 +376,11 @@ module cpu (
                         end // `OP_LOAD
                         `OP_JUMP: begin
                             if (instr_format == `INSTR_FORMAT_I) begin
-                                $display("%g: jump 0h%01x", $time, instr_i_imm);
+                                // $display("%g: jump 0h%01x", $time, instr_i_imm);
 
                                 cpu_regs_in <= instr_i_imm;
                             end else if (instr_format == `INSTR_FORMAT_RIS) begin
-                                $display("%g: jump r%1d (h'%x)", $time, instr_ris_reg, instr_dst_reg_val);
+                                // $display("%g: jump r%1d (h'%x)", $time, instr_ris_reg, instr_dst_reg_val);
 
                                 cpu_regs_in <= instr_dst_reg_val;
                             end
@@ -388,6 +389,19 @@ module cpu (
                             cpu_regs_id <= `REG_PC;
                             cpu_state <= `STATE_REG_WRITE;
                         end // `OP_JUMP
+                        `OP_CALL: begin
+                            if (instr_rro_off[40] == 1'b1)
+                                $display("%g: call r%1d (h'%x) off -0x%1x", $time,
+                                    instr_rro_dst, instr_dst_reg_val, ~instr_rro_off + 1);
+                            else
+                                $display("%g: call r%1d (h'%x) off 0x%1x", $time,
+                                    instr_rro_dst, instr_dst_reg_val, instr_rro_off);
+
+                            cpu_regs_in <= $signed(instr_dst_reg_val) + $signed(instr_rro_off);
+                            cpu_regs_write <= 1'b1;
+                            cpu_regs_id <= `REG_PC;
+                            cpu_state <= `STATE_REG_WRITE;
+                        end // `OP_CALL
                         `OP_TESTBIT: begin
                             // $display("%g: testbit r%01d, %01d", $time,
                                 // instr_ris_reg, instr_ris_imm);

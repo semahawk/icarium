@@ -79,6 +79,9 @@ class Shl():
     def __ror__(self, other):
         return self.shl | other
 
+    def __and__(self, other):
+        return self.off & other
+
 class Off():
     def __init__(self, off = 0x0):
         if off is None:
@@ -107,6 +110,9 @@ class Off():
     def __ror__(self, other):
         return self.off | other
 
+    def __and__(self, other):
+        return self.off & other
+
 class Format():
     # BARE is not a real instruction format, it's just used for the .emit
     # directive
@@ -132,18 +138,22 @@ class Instr(object):
 
     def emit(self):
         if self.format == Format.I:
+            # TODO check if self.imm is not overflowing and report if is
             return self.opcode  << 57 | \
                    self.format  << 55 | \
                    self.cond    << 51 | \
-                   self.imm
+                   (self.imm & (1 << 51)-1)
         elif self.format == Format.RRO:
-            return self.opcode  << 57 | \
-                   self.format  << 55 | \
-                   self.cond    << 51 | \
-                   self.dst_reg << 46 | \
-                   self.src_reg << 41 | \
-                   self.off
+            # TODO check if self.off is not overflowing and report if is
+            return  self.opcode  << 57 | \
+                    self.format  << 55 | \
+                    self.cond    << 51 | \
+                    self.dst_reg << 46 | \
+                    self.src_reg << 41 | \
+                   (self.off & ((1<<41)-1))
         elif self.format == Format.RIS:
+            # TODO check if self.imm and/or self.shl are not overflowing and
+            # report if are
             return self.opcode  << 57 | \
                    self.format  << 55 | \
                    self.cond    << 51 | \
@@ -184,6 +194,14 @@ class Jump(Instr):
             return "jump{} 0x{:x}".format(self.cond, self.imm)
         elif self.format == Format.RIS:
             return "jump{} r{}".format(self.cond, self.dst_reg)
+
+class Call(Instr):
+    def __init__(self, mnem, opcode, format, cond, **kwargs):
+        super().__init__(mnem, opcode, format, cond, **kwargs)
+
+    def __str__(self):
+        if self.format == Format.RRO:
+            return "call{} r{} {}".format(self.cond, self.dst_reg, self.off)
 
 class Set(Instr):
     def __init__(self, mnem, opcode, format, cond, **kwargs):
@@ -320,6 +338,21 @@ class Emitter(Transformer):
     def jump_ris(self, op, cond, reg):
         self.inc_pc()
         return Jump("jump", 0x04, Format.RIS, Cond(cond), dst_reg = reg)
+
+    def call_expr(self, op, cond, special_imm):
+        self.inc_pc()
+        # this offset from pc must be calculated after it's been incremented
+        # since when the instruction is executed by the CPU, the pc register
+        # points to the next instruction, not current
+        offset_from_pc = special_imm - self.current_pc
+
+        return Call("call", 0x0d, Format.RRO, Cond(cond),
+            dst_reg = 31, src_reg = 0x0, off = Off(offset_from_pc))
+
+    def call_rro(self, op, cond, reg, off):
+        self.inc_pc()
+        return Call("call", 0x0d, Format.RRO, Cond(cond),
+            dst_reg = reg, src_reg = 0x0, off = Off(off))
 
     def set_ris(self, op, cond, dst, src, shl):
         self.inc_pc()

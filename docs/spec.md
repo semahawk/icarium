@@ -14,42 +14,40 @@ The goal for Icarium is for it to be a very simple, embedded 64-bit System on Ch
 
 ## Registers
 
-| Name  | Description                                                  | Register id |
-| ----- | ------------------------------------------------------------ | ----------- |
-| `r0`  | Reading this register will always return 0. Writing operations are ignored. | `5'h00`     |
-| `r1`  | General purpose                                              | `5'h01`     |
-| `r2`  | General purpose                                              | `5'h02`     |
-| `r3`  | General purpose                                              | `5'h03`     |
-| `r4`  | General purpose                                              | `5'h04`     |
-| `r5`  | General purpose                                              | `5'h05`     |
-| `r6`  | General purpose                                              | `5'h06`     |
-| `r7`  | General purpose                                              | `5'h07`     |
-| `r8`  | General purpose                                              | `5'h08`     |
-| `r9`  | General purpose                                              | `5'h09`     |
-| `r10` | General purpose                                              | `5'h0a`     |
-| `r11` | General purpose                                              | `5'h0b`     |
-| `r12` | General purpose                                              | `5'h0c`     |
-| `r13` | General purpose                                              | `5'h0d`     |
-| `r14` | General purpose                                              | `5'h0e`     |
-| `r15` | General purpose                                              | `5'h0f`     |
-| `r16` | General purpose                                              | `5'h10`     |
-| `r17` | General purpose                                              | `5'h11`     |
-| `r18` | General purpose                                              | `5'h12`     |
-| `r19` | General purpose                                              | `5'h13`     |
-| `r20` | General purpose                                              | `5'h14`     |
-| `r21` | General purpose                                              | `5'h15`     |
-| `r22` | General purpose                                              | `5'h16`     |
-| `r23` | General purpose                                              | `5'h17`     |
-| `r24` | General purpose                                              | `5'h18`     |
-| `r25` | General purpose                                              | `5'h19`     |
-| `r26` | General purpose                                              | `5'h1a`     |
-| `r27` | General purpose                                              | `5'h1b`     |
-| `r28` | General purpose                                              | `5'h1c`     |
-| `r29` | General purpose                                              | `5'h1d`     |
-| `r30` | General purpose                                              | `5'h1e`     |
-| `pc`  | Program counter.                                             | `5'h1f`     |
-
-Note: All general purpose registers have a default value of `0x0` after a reset.
+| Name          | Description                                                  | Register id |
+| ------------- | ------------------------------------------------------------ | ----------- |
+| `r0`          | Reading this register will always return 0. Writing operations are ignored. | `5'h00`     |
+| `r1`          | General purpose                                              | `5'h01`     |
+| `r2`          | General purpose                                              | `5'h02`     |
+| `r3`          | General purpose                                              | `5'h03`     |
+| `r4`          | General purpose                                              | `5'h04`     |
+| `r5`          | General purpose                                              | `5'h05`     |
+| `r6`          | General purpose                                              | `5'h06`     |
+| `r7`          | General purpose                                              | `5'h07`     |
+| `r8`          | General purpose                                              | `5'h08`     |
+| `r9`          | General purpose                                              | `5'h09`     |
+| `r10`         | General purpose                                              | `5'h0a`     |
+| `r11`         | General purpose                                              | `5'h0b`     |
+| `r12`         | General purpose                                              | `5'h0c`     |
+| `r13`         | General purpose                                              | `5'h0d`     |
+| `r14`         | General purpose                                              | `5'h0e`     |
+| `r15`         | General purpose                                              | `5'h0f`     |
+| `r16`         | General purpose                                              | `5'h10`     |
+| `r17`         | General purpose                                              | `5'h11`     |
+| `r18`         | General purpose                                              | `5'h12`     |
+| `r19`         | General purpose                                              | `5'h13`     |
+| `r20`         | General purpose                                              | `5'h14`     |
+| `r21`         | General purpose                                              | `5'h15`     |
+| `r22`         | General purpose                                              | `5'h16`     |
+| `r23`         | General purpose                                              | `5'h17`     |
+| `r24`         | General purpose                                              | `5'h18`     |
+| `r25`         | General purpose                                              | `5'h19`     |
+| `r26`         | General purpose                                              | `5'h1a`     |
+| `r27`         | General purpose                                              | `5'h1b`     |
+| `r28`         | General purpose                                              | `5'h1c`     |
+| `r29`         | General purpose                                              | `5'h1d`     |
+| `r30` or `sp` | Stack pointer.                                               | `5'h1e`     |
+| `r31` or `pc` | Program counter.                                             | `5'h1f`     |
 
 ## Status register
 
