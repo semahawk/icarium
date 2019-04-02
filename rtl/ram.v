@@ -42,7 +42,6 @@ module ram (
     reg r_err = 1'h0;
 
     reg [`DAT_WIDTH-1:0] memory [0:WORDS-1];
-    integer i;
 
     assign ram_ack_o = ram_stb_i ? r_ack : 1'b0;
     assign ram_err_o = ram_stb_i ? r_err : 1'b0;
@@ -67,9 +66,9 @@ module ram (
                             if (ram_we_i) begin
                                 // FIXME this effectively means we are ignoring the
                                 // low 3 bits of the address
-                                memory[ram_adr_i >> 3] <= ram_dat_i;
+                                memory[(ram_adr_i & 64'hffff) >> 3] <= ram_dat_i;
                             end else begin
-                                r_dat_o <= memory[ram_adr_i >> 3];
+                                r_dat_o <= memory[(ram_adr_i & 64'hffff) >> 3];
                             end
 
                             r_ack <= 1'h1;
