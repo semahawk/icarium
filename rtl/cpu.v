@@ -22,6 +22,7 @@
 `include "wishbone.v"
 
 `define REG_ZERO  0
+`define REG_SP   30
 `define REG_PC   31
 
 `define STATE_HALT      0
@@ -48,6 +49,12 @@
 `define OP_SHIFTR  7'h0c
 `define OP_CALL    7'h0d
 `define OP_HALT    7'h7f
+
+`define OP_CALL_STATE_0 0
+`define OP_CALL_STATE_1 1
+`define OP_CALL_STATE_2 2
+`define OP_CALL_STATE_3 3
+`define OP_CALL_STATE_4 4
 
 // those values should be encoded into the instruction
 `define INSTR_FORMAT_RRO  2'b00
@@ -104,7 +111,10 @@ module cpu (
     reg [`DAT_WIDTH-1:0] instr_dst_reg_val;
     reg [`DAT_WIDTH-1:0] instr_src_reg_val;
 
-    integer i;
+    reg [1:0] op_call_sp_clocks = 2'd2;
+    reg [1:0] op_call_state;
+
+    reg [`DAT_WIDTH-1:0] cpu_save_next_pc;
 
     reg                   cpu_regs_write = 1'b0;
     reg  [4:0]            cpu_regs_id = `REG_PC;
@@ -137,6 +147,8 @@ module cpu (
             cpu_regs_write <= 1'b0;
             fetch_dst_reg_clocks <= 2'd2;
             fetch_src_reg_clocks <= 2'd2;
+            op_call_sp_clocks <= 2'd2;
+            op_call_state <= `OP_CALL_STATE_0;
         end else begin
             case (cpu_state)
                 `STATE_HALT: begin
@@ -180,6 +192,8 @@ module cpu (
                     end
                 end // `STATE_FETCH
                 `STATE_DECODE: begin
+                    // save the pc of the next instruction (if any op needs it)
+                    cpu_save_next_pc <= cpu_regs_out;
                     cpu_regs_write <= 1'b0;
 
                     if (cpu_ack_i) begin
@@ -237,6 +251,12 @@ module cpu (
                         cpu_state <= `STATE_EXECUTE;
                         fetch_dst_reg_clocks <= 2'd2;
                         fetch_src_reg_clocks <= 2'd2;
+
+                        // 'pre-load' the sp register
+                        if (instr_opcode == `OP_CALL) begin
+                            cpu_regs_write <= 1'b0;
+                            cpu_regs_id <= `REG_SP;
+                        end
                     end
                 end
                 `STATE_EXECUTE: begin
@@ -397,10 +417,48 @@ module cpu (
                                 $display("%g: call r%1d (h'%x) off 0x%1x", $time,
                                     instr_rro_dst, instr_dst_reg_val, instr_rro_off);
 
-                            cpu_regs_in <= $signed(instr_dst_reg_val) + $signed(instr_rro_off);
-                            cpu_regs_write <= 1'b1;
-                            cpu_regs_id <= `REG_PC;
-                            cpu_state <= `STATE_REG_WRITE;
+                            case (op_call_state)
+                                `OP_CALL_STATE_0: begin
+                                    // the `STATE_REG_READ stage preloaded the sp register
+                                    // delay one cycle to fetch the content of sp
+                                    op_call_state <= `OP_CALL_STATE_1;
+                                end
+                                `OP_CALL_STATE_1: begin
+                                    // and prepare for sp to be decreased
+                                    cpu_regs_write <= 1'b1;
+                                    cpu_regs_in <= cpu_regs_out - 8 /* sp - 8 */;
+                                    cpu_regs_id <= `REG_SP;
+
+                                    // issue a bus write cycle to write the return address
+                                    // onto the stack
+                                    cpu_stb_o <= 1'b1;
+                                    cpu_cyc_o <= 1'b1;
+                                    cpu_we_o <= 1'b1;
+                                    cpu_sel_o <= 8'hff;
+                                    cpu_adr_o <= cpu_regs_out - 8 /* value of sp */;
+                                    cpu_dat_o <= cpu_save_next_pc + 8 /* next instruction's pc */;
+
+                                    if (cpu_ack_i) begin
+                                        cpu_stb_o <= 1'b0;
+                                        cpu_cyc_o <= 1'b0;
+                                        cpu_we_o <= 1'b0;
+                                        op_call_state <= `OP_CALL_STATE_2;
+                                    end
+                                end
+                                `OP_CALL_STATE_2: begin
+                                    // make sure the new value of sp clocks in
+                                    op_call_state <= `OP_CALL_STATE_3;
+                                end
+                                `OP_CALL_STATE_3: begin
+                                    // and finally, make the actual jump
+                                    // by overwritting pc
+                                    cpu_regs_in <= $signed(instr_dst_reg_val) + $signed(instr_rro_off);
+                                    cpu_regs_write <= 1'b1;
+                                    cpu_regs_id <= `REG_PC;
+                                    cpu_state <= `STATE_REG_WRITE;
+                                    op_call_state <= `OP_CALL_STATE_0;
+                                end
+                            endcase
                         end // `OP_CALL
                         `OP_TESTBIT: begin
                             // $display("%g: testbit r%01d, %01d", $time,

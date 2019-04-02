@@ -49,20 +49,19 @@ module rom (
 
     always @(*) begin
         casex (rom_adr_i)
-16'h0000: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0008: r_dat_o = 64'h0286c01002000010; // set r27, 0x80100000 shl 16
-16'h0010: r_dat_o = 64'h02804000000002a0; // set r1, 0x15
-16'h0018: r_dat_o = 64'h1a07c00000000028; // call r31 off 40
-16'h0020: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0028: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0030: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0038: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0040: r_dat_o = 64'h00000000deadbabe; // .emit
-16'h0048: r_dat_o = 64'h0407360000000000; // load r28, r27
-16'h0050: r_dat_o = 64'h0a87000000000000; // testbit r28, 0
-16'h0058: r_dat_o = 64'h0948800000000048; // jump.nz 0x800000000048
-16'h0060: r_dat_o = 64'h0606c20000000010; // store r1, r27 off 16
-16'h0068: r_dat_o = 64'h1a07c1ffffffff98; // call r31 off -104
+16'h0000: r_dat_o = 64'h0287800010001018; // set r30, 0x800080 shl 24
+16'h0008: r_dat_o = 64'h1687800000008000; // add r30, 0x400 0
+16'h0010: r_dat_o = 64'h0286c01002000010; // set r27, 0x80100000 shl 16
+16'h0018: r_dat_o = 64'h02804000000002a0; // set r1, 0x15
+16'h0020: r_dat_o = 64'h1a07c00000000008; // call r31 off 8
+16'h0028: r_dat_o = 64'h0c87c00000000200; // sub r31, 16
+16'h0030: r_dat_o = 64'h0407360000000000; // load r28, r27
+16'h0038: r_dat_o = 64'h0a87000000000000; // testbit r28, 0
+16'h0040: r_dat_o = 64'h0948800000000030; // jump.nz 0x800000000030
+16'h0048: r_dat_o = 64'h0606c20000000010; // store r1, r27 off 16
+16'h0050: r_dat_o = 64'h04077c0000000000; // load r29, r30
+16'h0058: r_dat_o = 64'h1687800000000100; // add r30, 0x8 0
+16'h0060: r_dat_o = 64'h0887400000000000; // jump r29
             default:  r_dat_o = 64'hfe00000000000000; // halt by default
         endcase
     end
