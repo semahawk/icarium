@@ -387,6 +387,7 @@ class Emitter(Transformer):
         return Instr(0, 0, 0, emit = False)
 
     def emit(self, op, imm):
+        self.inc_pc()
         print("# emitting bare immediate {}".format(imm))
         return Instr(".emit", 0, Format.BARE, Cond(), bare = imm)
 
