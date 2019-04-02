@@ -410,6 +410,18 @@ class Emitter(Transformer):
 
         return reg_id
 
+    def expr_add(self, lhs, rhs):
+        return lhs + rhs
+
+    def expr_sub(self, lhs, rhs):
+        return lhs - rhs
+
+    def expr_mul(self, lhs, rhs):
+        return lhs * rhs
+
+    def expr_div(self, lhs, rhs):
+        return lhs / rhs
+
     def imm(self, value):
         return int(str(value), base = 0)
 
@@ -464,6 +476,21 @@ class Prerun(Transformer):
 
     def alias(self, op, alias_name, reg):
         pass
+
+    def expr(self, expr):
+        pass
+
+    def expr_add(self, lhs, rhs):
+        return lhs + rhs
+
+    def expr_sub(self, lhs, rhs):
+        return lhs - rhs
+
+    def expr_mul(self, lhs, rhs):
+        return lhs * rhs
+
+    def expr_div(self, lhs, rhs):
+        return lhs / rhs
 
     def imm(self, imm):
         return int(str(imm), base = 0)

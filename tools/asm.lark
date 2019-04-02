@@ -1,25 +1,25 @@
 start: instr*
 instr: /nop/         ["." cond] -> nop
-     | /jump/        ["." cond] imm -> jump_i
+     | /jump/        ["." cond] expr -> jump_i
      | /jump/        ["." cond] reg -> jump_ris
-     | /set/         ["." cond] reg "," imm ["shl" imm] -> set_ris
+     | /set/         ["." cond] reg "," expr ["shl" expr] -> set_ris
      | /set/         ["." cond] reg "," reg -> set_rro
-     | /load/        ["." cond] reg "," reg ["off" imm] -> load
-     | /store/       ["." cond] reg "," reg ["off" imm] -> store
-     | /testbit/     ["." cond] reg "," imm -> testbit
-     | /sub/         ["." cond] reg "," imm -> sub
-     | /add/         ["." cond] reg "," imm -> add
-     | /shiftl/      ["." cond] reg "," imm -> shiftl
-     | /shiftr/      ["." cond] reg "," imm -> shiftr
+     | /load/        ["." cond] reg "," reg ["off" expr] -> load
+     | /store/       ["." cond] reg "," reg ["off" expr] -> store
+     | /testbit/     ["." cond] reg "," expr -> testbit
+     | /sub/         ["." cond] reg "," expr -> sub
+     | /add/         ["." cond] reg "," expr -> add
+     | /shiftl/      ["." cond] reg "," expr -> shiftl
+     | /shiftr/      ["." cond] reg "," expr -> shiftr
      | /or/          ["." cond] reg "," reg -> or_
      | /and/         ["." cond] reg "," reg -> and_
      | /xor/         ["." cond] reg "," reg -> xor
      | /halt/        ["." cond] -> halt
-     | /\.base/ imm -> base
-     | /\.define/ NAME imm -> define
+     | /\.base/ expr -> base
+     | /\.define/ NAME expr -> define
      | /\.include/ NAME -> include
      | /\.alias/ NAME reg -> alias
-     | /\.emit/ imm -> emit
+     | /\.emit/ expr -> emit
      | /([a-zA-Z_][a-zA-Z0-9_]+):/ -> label
 
 !cond: /(z|nz)/ -> cond
@@ -29,6 +29,16 @@ instr: /nop/         ["." cond] -> nop
     | "pc" -> reg
 
 !sep: /[\\n;]/
+
+?expr: sum
+
+?sum: product
+    | sum "+" product -> expr_add
+    | sum "-" product -> expr_sub
+
+?product: imm
+        | product "*" imm -> expr_mul
+        | product "/" imm -> expr_div
 
 !imm: /0b[0-1]+/ -> imm
     | /0c[0-7]+/ -> imm

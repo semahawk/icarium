@@ -12,8 +12,11 @@
 .alias count r4
 .alias babe r6
 .alias add_test r7
+.alias expr_result r8
 
 start:
+    set expr_result, 2+2*2
+
     set uart_base, 0x80100000 shl 16
     set byte_to_send, 0x73
     // we'll send only this many characters
@@ -32,7 +35,7 @@ send_char:
     shiftl r5, 1
     or babe, r5
     and babe, babe
-    add add_test, 1
+    add add_test, 0+2*1-1
 
     // decrease the counter and exit if already at zero
     sub count, 1
@@ -47,7 +50,7 @@ real_exit:
 exit:
     // jump to #real_exit via a register
     // pc points to the next instruction to execute
-    // so there's no need to offset by 8 here
-    load r10, pc
-    .emit #real_exit
+    // so pc+8 is the .emit instruction
+    load r10, pc off 8
     jump r10
+    .emit #real_exit
