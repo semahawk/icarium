@@ -305,6 +305,30 @@ jump <reg>
 
 This instruction will set register `pc` to the value taken from register `<reg>`.
 
+### call (register, offset)
+
+Format: RRO
+
+Opcode: `7'hd`
+
+```
+call <reg> off <imm>
+```
+
+This instruction will effectively decrement the `sp` register by 8, issue a bus write cycle to write value of `pc + 8` into address `sp`, and make a jump to `reg + imm`.
+
+### return
+
+Format: I
+
+Opcode: `7'he`
+
+```
+return
+```
+
+This instruction will effectively issue a bus read cycle to read from address `sp`, increment `sp` by 8, and then jump to address obtained from the bus read cycle.
+
 ### halt
 
 Format: I

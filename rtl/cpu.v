@@ -48,13 +48,18 @@
 `define OP_ADD     7'h0b
 `define OP_SHIFTR  7'h0c
 `define OP_CALL    7'h0d
+`define OP_RETURN  7'h0e
 `define OP_HALT    7'h7f
 
 `define OP_CALL_STATE_0 0
 `define OP_CALL_STATE_1 1
 `define OP_CALL_STATE_2 2
 `define OP_CALL_STATE_3 3
-`define OP_CALL_STATE_4 4
+
+`define OP_RETURN_STATE_0 0
+`define OP_RETURN_STATE_1 1
+`define OP_RETURN_STATE_2 2
+`define OP_RETURN_STATE_3 3
 
 // those values should be encoded into the instruction
 `define INSTR_FORMAT_RRO  2'b00
@@ -111,8 +116,9 @@ module cpu (
     reg [`DAT_WIDTH-1:0] instr_dst_reg_val;
     reg [`DAT_WIDTH-1:0] instr_src_reg_val;
 
-    reg [1:0] op_call_sp_clocks = 2'd2;
     reg [1:0] op_call_state;
+    reg [1:0] op_return_state;
+    reg [`DAT_WIDTH-1:0] op_return_next_pc;
 
     reg [`DAT_WIDTH-1:0] cpu_save_next_pc;
 
@@ -147,8 +153,8 @@ module cpu (
             cpu_regs_write <= 1'b0;
             fetch_dst_reg_clocks <= 2'd2;
             fetch_src_reg_clocks <= 2'd2;
-            op_call_sp_clocks <= 2'd2;
             op_call_state <= `OP_CALL_STATE_0;
+            op_return_state <= `OP_RETURN_STATE_0;
         end else begin
             case (cpu_state)
                 `STATE_HALT: begin
@@ -460,6 +466,51 @@ module cpu (
                                 end
                             endcase
                         end // `OP_CALL
+                        `OP_RETURN: begin
+                            $display("%g: return", $time);
+
+                            case (op_return_state)
+                                `OP_RETURN_STATE_0: begin
+                                    cpu_regs_write <= 1'b0;
+                                    cpu_regs_id <= `REG_SP;
+                                    op_return_state <= `OP_RETURN_STATE_1;
+                                end
+                                `OP_RETURN_STATE_1: begin
+                                    // delay one cycle to fetch the content of sp
+                                    op_return_state <= `OP_RETURN_STATE_2;
+                                end
+                                `OP_RETURN_STATE_2: begin
+                                    // make a bus read cycle to read the
+                                    // return address from the top of stack
+                                    cpu_stb_o <= 1'b1;
+                                    cpu_cyc_o <= 1'b1;
+                                    cpu_we_o <= 1'b0;
+                                    cpu_sel_o <= 8'hff;
+                                    cpu_adr_o <= cpu_regs_out /* value of sp */;
+
+                                    if (cpu_ack_i) begin
+                                        cpu_stb_o <= 1'b0;
+                                        cpu_cyc_o <= 1'b0;
+                                        // save the pc to jump to
+                                        op_return_next_pc <= cpu_dat_i;
+                                        // let's increment sp by 8
+                                        cpu_regs_write <= 1'b1;
+                                        cpu_regs_id <= `REG_SP;
+                                        cpu_regs_in <= cpu_regs_out + 8;
+                                        op_return_state <= `OP_RETURN_STATE_3;
+                                    end
+                                end
+                                `OP_RETURN_STATE_3: begin
+                                  // new sp should have clocked in
+                                  // let's now set the pc to the new one
+                                  cpu_regs_write <= 1'b1;
+                                  cpu_regs_id <= `REG_PC;
+                                  cpu_regs_in <= op_return_next_pc;
+                                  cpu_state <= `STATE_REG_WRITE;
+                                  op_return_state <= `OP_RETURN_STATE_0;
+                                end
+                            endcase
+                        end // `OP_RETURN
                         `OP_TESTBIT: begin
                             // $display("%g: testbit r%01d, %01d", $time,
                                 // instr_ris_reg, instr_ris_imm);

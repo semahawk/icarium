@@ -203,6 +203,14 @@ class Call(Instr):
         if self.format == Format.RRO:
             return "call{} r{} {}".format(self.cond, self.dst_reg, self.off)
 
+class Return(Instr):
+    def __init__(self, mnem, opcode, format, cond, **kwargs):
+        super().__init__(mnem, opcode, format, cond, **kwargs)
+
+    def __str__(self):
+        if self.format == Format.I:
+            return "return{}".format(self.cond)
+
 class Set(Instr):
     def __init__(self, mnem, opcode, format, cond, **kwargs):
         super().__init__(mnem, opcode, format, cond, **kwargs)
@@ -353,6 +361,10 @@ class Emitter(Transformer):
         self.inc_pc()
         return Call("call", 0x0d, Format.RRO, Cond(cond),
             dst_reg = reg, src_reg = 0x0, off = Off(off))
+
+    def return_(self, op, cond):
+        self.inc_pc()
+        return Return("call", 0x0e, Format.I, Cond(cond), imm = 0x0)
 
     def set_ris(self, op, cond, dst, src, shl):
         self.inc_pc()

@@ -59,9 +59,7 @@ module rom (
 16'h0038: r_dat_o = 64'h0a87000000000000; // testbit r28, 0
 16'h0040: r_dat_o = 64'h0948800000000030; // jump.nz 0x800000000030
 16'h0048: r_dat_o = 64'h0606c20000000010; // store r1, r27 off 16
-16'h0050: r_dat_o = 64'h04077c0000000000; // load r29, r30
-16'h0058: r_dat_o = 64'h1687800000000100; // add r30, 0x8 0
-16'h0060: r_dat_o = 64'h0887400000000000; // jump r29
+16'h0050: r_dat_o = 64'h1d00000000000000; // return
             default:  r_dat_o = 64'hfe00000000000000; // halt by default
         endcase
     end

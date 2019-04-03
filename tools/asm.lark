@@ -4,6 +4,7 @@ instr: /nop/         ["." cond] -> nop
      | /jump/        ["." cond] reg -> jump_ris
      | /call/        ["." cond] expr -> call_expr
      | /call/        ["." cond] reg ["off" expr] -> call_rro
+     | /return/      ["." cond] -> return_
      | /set/         ["." cond] reg "," expr ["shl" expr] -> set_ris
      | /set/         ["." cond] reg "," reg -> set_rro
      | /load/        ["." cond] reg "," reg ["off" expr] -> load
