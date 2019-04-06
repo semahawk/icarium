@@ -190,10 +190,8 @@ class Jump(Instr):
         super().__init__(mnem, opcode, format, cond, **kwargs)
 
     def __str__(self):
-        if self.format == Format.I:
-            return "jump{} 0x{:x}".format(self.cond, self.imm)
-        elif self.format == Format.RIS:
-            return "jump{} r{}".format(self.cond, self.dst_reg)
+        if self.format == Format.RRO:
+            return "jump{} r{} {}".format(self.cond, self.dst_reg, self.off)
 
 class Call(Instr):
     def __init__(self, mnem, opcode, format, cond, **kwargs):
@@ -339,20 +337,27 @@ class Emitter(Transformer):
         self.inc_pc()
         return Halt("halt", 0x7f, Cond(cond))
 
-    def jump_i(self, op, cond, imm):
-        self.inc_pc()
-        return Jump("jump", 0x04, Format.I, Cond(cond), imm = imm)
-
-    def jump_ris(self, op, cond, reg):
-        self.inc_pc()
-        return Jump("jump", 0x04, Format.RIS, Cond(cond), dst_reg = reg)
-
-    def call_expr(self, op, cond, special_imm):
+    def jump_expr(self, op, cond, imm):
         self.inc_pc()
         # this offset from pc must be calculated after it's been incremented
         # since when the instruction is executed by the CPU, the pc register
         # points to the next instruction, not current
-        offset_from_pc = special_imm - self.current_pc
+        offset_from_pc = imm - self.current_pc
+
+        return Jump("jump", 0x04, Format.RRO, Cond(cond),
+            dst_reg = 31, src_reg = 0x0, off = Off(offset_from_pc))
+
+    def jump_rro(self, op, cond, reg, off):
+        self.inc_pc()
+        return Jump("jump", 0x04, Format.RRO, Cond(cond),
+            dst_reg = reg, src_reg = 0x0, off = Off(off))
+
+    def call_expr(self, op, cond, imm):
+        self.inc_pc()
+        # this offset from pc must be calculated after it's been incremented
+        # since when the instruction is executed by the CPU, the pc register
+        # points to the next instruction, not current
+        offset_from_pc = imm - self.current_pc
 
         return Call("call", 0x0d, Format.RRO, Cond(cond),
             dst_reg = 31, src_reg = 0x0, off = Off(offset_from_pc))

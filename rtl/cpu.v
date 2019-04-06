@@ -401,16 +401,14 @@ module cpu (
                             end
                         end // `OP_LOAD
                         `OP_JUMP: begin
-                            if (instr_format == `INSTR_FORMAT_I) begin
-                                // $display("%g: jump 0h%01x", $time, instr_i_imm);
+                            if (instr_rro_off[40] == 1'b1)
+                                $display("%g: jump r%1d (h'%x) off -0x%1x", $time,
+                                    instr_rro_dst, instr_dst_reg_val, ~instr_rro_off + 1);
+                            else
+                                $display("%g: jump r%1d (h'%x) off 0x%1x", $time,
+                                    instr_rro_dst, instr_dst_reg_val, instr_rro_off);
 
-                                cpu_regs_in <= instr_i_imm;
-                            end else if (instr_format == `INSTR_FORMAT_RIS) begin
-                                // $display("%g: jump r%1d (h'%x)", $time, instr_ris_reg, instr_dst_reg_val);
-
-                                cpu_regs_in <= instr_dst_reg_val;
-                            end
-
+                            cpu_regs_in <= $signed(instr_dst_reg_val) + $signed(instr_rro_off);
                             cpu_regs_write <= 1'b1;
                             cpu_regs_id <= `REG_PC;
                             cpu_state <= `STATE_REG_WRITE;

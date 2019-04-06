@@ -289,21 +289,27 @@ shiftr <reg>, <imm>
 
 Will effectively perform `reg = reg >> imm`. No side effects (at the moment).
 
-### jump (immediate address)
+### jump (using a register)
+
+Format: RRO
+
+Opcode: `7'h4`
+
+```
+jump <reg> [, off <imm>]
+```
+
+This instruction will set register `pc` to the value taken of `<reg> + <imm>` (`<imm>` can be negative, so backward jumps are possible)
 
 ```
 jump <imm>
 ```
 
-This instruction will set register `pc` to the specified `<imm>` value.
-
-### jump (using a register)
+The assembler also supports this syntactic sugar syntax (so you can eg. jump to a label etc). When this is used the assembler will calculate the proper offset and implicitly use the `pc` register, turning it into this call:
 
 ```
-jump <reg>
+jump pc, off <offset from current pc>
 ```
-
-This instruction will set register `pc` to the value taken from register `<reg>`.
 
 ### call (register, offset)
 
@@ -316,6 +322,12 @@ call <reg> off <imm>
 ```
 
 This instruction will effectively decrement the `sp` register by 8, issue a bus write cycle to write value of `pc + 8` into address `sp`, and make a jump to `reg + imm`.
+
+```
+call <imm>
+```
+
+The assembler also supports this syntactic sugar syntax. In this case, just like in the `jump` case, the assembler will implicitly use the `pc` register, and calculate the correct offset.
 
 ### return
 
