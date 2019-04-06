@@ -115,8 +115,6 @@ module uart (
     assign uart_tx_transmitting_data =
         (uart_tx_state != `STATE_TX_IDLE) || uart_tx_start ? 1'b1 : 1'b0;
 
-    reg [4:0] tx_wait_clocks = 4'd10;
-
     reg [7:0] r_uart_out;
 
     // Wishbone signals
@@ -324,18 +322,14 @@ module uart (
     always @(posedge uart_tx_baud_clk) begin
         case (uart_tx_state)
             `STATE_TX_IDLE: begin
-                if (tx_wait_clocks > 0) begin
-                    tx_wait_clocks <= tx_wait_clocks - 1;
+                if (uart_tx_start) begin
+                    uart_tx_state <= `STATE_TX_SEND_DATA;
+                    // output the start bit
+                    r_uart_tx <= 1'h0;
+                    uart_tx_bit_idx <= 4'h0;
                 end else begin
-                    if (uart_tx_start) begin
-                        uart_tx_state <= `STATE_TX_SEND_DATA;
-                        // output the start bit
-                        r_uart_tx <= 1'h0;
-                        uart_tx_bit_idx <= 4'h0;
-                    end else begin
-                        // output high when idle
-                        r_uart_tx <= 1'h1;
-                    end
+                    // output high when idle
+                    r_uart_tx <= 1'h1;
                 end
             end // `STATE_TX_IDLE
             `STATE_TX_SEND_DATA: begin
